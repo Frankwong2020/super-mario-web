@@ -1,0 +1,971 @@
+// ============================================================
+// textures.js - 代码生成全部像素美术（FC 红白机风格，原创绘制）
+// 每个精灵用 ASCII 像素图 + 调色板定义，启动时绘制到 Canvas 纹理
+// ============================================================
+
+/* eslint-disable */
+
+// ---------- 通用调色板 ----------
+const PAL = {
+  '.': null,            // 透明
+  'K': '#000000',       // 黑
+  'W': '#ffffff',       // 白
+  'R': '#d82800',       // 英雄红
+  'r': '#a81000',       // 暗红
+  'S': '#fcb888',       // 皮肤
+  'H': '#7c4a00',       // 头发/鞋 棕
+  'B': '#2038ec',       // 背带裤蓝
+  'Y': '#fcc000',       // 金黄
+  'y': '#a86800',       // 暗金
+  'G': '#00a800',       // 草绿
+  'g': '#80d010',       // 亮绿
+  'd': '#005800',       // 深绿
+  'N': '#c84c0c',       // 板栗棕
+  'n': '#883400',       // 深板栗
+  'E': '#fce0a8',       // 米色
+  'O': '#e09038',       // 地面橙
+  'o': '#a04000',       // 地面暗橙
+  'P': '#f8c890',       // 地面亮
+  'T': '#00a8a8',       // 地下青
+  't': '#005c5c',       // 地下暗青
+  'A': '#b0b0b0',       // 石灰
+  'a': '#686868',       // 石暗
+  'L': '#f83800',       // 岩浆红
+  'l': '#fca044',       // 岩浆橙
+  'C': '#3cbcfc',       // 天空蓝
+  'F': '#f87858',       // 火焰橙红
+};
+
+function colorOf(ch, overrides) {
+  if (overrides && ch in overrides) return overrides[ch];
+  return PAL[ch] !== undefined ? PAL[ch] : null;
+}
+
+// 把 ASCII 像素图绘制成纹理
+function makeTex(scene, key, rows, overrides) {
+  const h = rows.length, w = rows[0].length;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const c = colorOf(rows[y][x], overrides);
+      if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  if (scene.textures.exists(key)) scene.textures.remove(key);
+  scene.textures.addCanvas(key, canvas);
+}
+
+function mirror(rows) {
+  return rows.map(r => r.split('').reverse().join(''));
+}
+
+// ============================================================
+// 主角（小形态 16x16）
+// ============================================================
+const PS_IDLE = [
+  '.....RRRRRR.....',
+  '....RRRRRRRRRR..',
+  '....HHHSSSKS....',
+  '...HSHSSSSKSSS..',
+  '...HSHHSSSSKSSS.',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '....RRRBRRR.....',
+  '...RRRRBRRBRRR..',
+  '..RRRRRBBBBRRRR.',
+  '..SSRRBYBBYBRSS.',
+  '..SSSBBBBBBBSSS.',
+  '..SSBBBBBBBBBSS.',
+  '....BBBB..BBB...',
+  '...HHHH...HHHH..',
+  '..HHHHH...HHHHH.',
+];
+const PS_WALK = [
+  '.....RRRRRR.....',
+  '....RRRRRRRRRR..',
+  '....HHHSSSKS....',
+  '...HSHSSSSKSSS..',
+  '...HSHHSSSSKSSS.',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '....RRRBRRRR....',
+  '...RRRRBRRBRSS..',
+  '..SSRRRBBBBRSS..',
+  '..SSRRBYBBYB....',
+  '...BBBBBBBBB....',
+  '...BBBBBBBBB....',
+  '....BBBBBBB.....',
+  '...HHHHBBB......',
+  '..HHHHH..HHHH...',
+];
+const PS_JUMP = [
+  '.....RRRRRR..SS.',
+  '....RRRRRRRRRSS.',
+  '....HHHSSSKS.SS.',
+  '...HSHSSSSKSSS..',
+  '...HSHHSSSSKSS..',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '..RRRRRBRRRR....',
+  '.SSRRRRBRRBRR...',
+  '.SSRRRRBBBBRR...',
+  '.SS.RRBYBBYB....',
+  '....BBBBBBBB....',
+  '...BBBBBBBBBB...',
+  '..HHBBBB.BBBH...',
+  '..HHHH...HHHH...',
+  '..HHH.....HHH...',
+];
+
+// ============================================================
+// 主角（大形态 16x24）
+// ============================================================
+const PB_IDLE = [
+  '.....RRRRRR.....',
+  '....RRRRRRRRR...',
+  '....RRRRRRRRRR..',
+  '....HHHSSSKS....',
+  '...HSHSSSSKSSS..',
+  '...HSHHSSSSKSS..',
+  '...HSHHSSSSKSSS.',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '....RRRRRRRR....',
+  '...RRRRRRRRRR...',
+  '..RRRRRRRRRRRR..',
+  '..RRRBBRRRBBRR..',
+  '..SSRBBRRRBBRSS.',
+  '..SSRBBBBBBBRSS.',
+  '..SSBBYBBBYBBSS.',
+  '...BBBBBBBBBBB..',
+  '...BBBBBBBBBB...',
+  '...BBBB..BBBB...',
+  '...BBB....BBB...',
+  '...BBB....BBB...',
+  '..HHHH....HHHH..',
+  '..HHHHH...HHHHH.',
+  '.HHHHH.....HHHH.',
+];
+const PB_WALK = [
+  '.....RRRRRR.....',
+  '....RRRRRRRRR...',
+  '....RRRRRRRRRR..',
+  '....HHHSSSKS....',
+  '...HSHSSSSKSSS..',
+  '...HSHHSSSSKSS..',
+  '...HSHHSSSSKSSS.',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '....RRRRRRRR....',
+  '...RRRRRRRRRSS..',
+  '..RRRRRRRRRRSS..',
+  '..RRRBBRRRBBSS..',
+  '..SSRBBRRRBB....',
+  '..SSRBBBBBBB....',
+  '..SSBBYBBBYB....',
+  '...BBBBBBBBBB...',
+  '...BBBBBBBBBB...',
+  '....BBBBBBBB....',
+  '....BBBBBB......',
+  '...BBB.BBBB.....',
+  '..HHHH..BBBH....',
+  '..HHHHH.HHHHH...',
+  '..HHHH...HHHHH..',
+];
+const PB_JUMP = [
+  '.....RRRRRR..SS.',
+  '....RRRRRRRRRSS.',
+  '....RRRRRRRRRSS.',
+  '....HHHSSSKSSS..',
+  '...HSHSSSSKSS...',
+  '...HSHHSSSSKSS..',
+  '...HSHHSSSSKSSS.',
+  '...HHSSSSSKKKK..',
+  '.....SSSSSSSS...',
+  '..RRRRRRRRRR....',
+  '.SSRRRRRRRRRR...',
+  '.SSRRRRRRRRRRR..',
+  '.SSRRBBRRRBBRR..',
+  '....RBBRRRBBR...',
+  '....RBBBBBBBR...',
+  '....BBYBBBYBB...',
+  '...BBBBBBBBBBB..',
+  '...BBBBBBBBBB...',
+  '...BBBB..BBBB...',
+  '..BBBB....BBBB..',
+  '..BBB......BBB..',
+  '.HHHH......HHHH.',
+  '.HHHHH....HHHHH.',
+  '.HHHH......HHHH.',
+];
+
+// 火焰形态 = 大形态换色（红→白、蓝→红）
+const FIRE_SWAP = { 'R': '#fcfcfc', 'r': '#d8d8d8', 'B': '#d82800', 'Y': '#fcc000' };
+
+// ============================================================
+// 板栗仔 Goomba（16x16）
+// ============================================================
+const GOOMBA = [
+  '......KKKK......',
+  '....KKNNNNKK....',
+  '...KNNNNNNNNK...',
+  '..KNNNNNNNNNNK..',
+  '..KNWWKNNKWWNK..',
+  '.KNNWKKNNKKWNNK.',
+  '.KNNNNNNNNNNNNK.',
+  '.KNNNNNNNNNNNNK.',
+  '.KNNNNNNNNNNNNK.',
+  '..KNNNNNNNNNNK..',
+  '...KEEEEEEEEK...',
+  '..KEEKKKKKKEEK..',
+  '..KEEEEEEEEEEK..',
+  '..KKHHK..KHHKK..',
+  '.KHHHHK..KHHHHK.',
+  '..KKKK....KKKK..',
+];
+const GOOMBA_FLAT = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '....KKKKKKKK....',
+  '..KKNNNNNNNNKK..',
+  '.KNNWKNNNNKWNNK.',
+  '.KNNNNNNNNNNNNK.',
+  '..KEEEEEEEEEEK..',
+  '.KHHHKKKKKKHHHK.',
+  '..KKK......KKK..',
+];
+
+// ============================================================
+// 乌龟 Koopa（16x22）/ 龟壳（16x14）
+// ============================================================
+const KOOPA0 = [
+  '......ggggg.....',
+  '.....ggggggg....',
+  '.....gWKgggg....',
+  '.....gWKgggg....',
+  '.....ggggggg....',
+  '.....EEEEgg.....',
+  '....EEEE........',
+  '...dGGGGGd......',
+  '..dGgGGgGGd.....',
+  '.dGGgGGgGGGd....',
+  '.dGgggggggGd....',
+  '.dGGgGGgGGGd....',
+  '.dGgGGgGGGGd....',
+  '.dGGgggggGGd....',
+  '..dGGGGGGGd.....',
+  '...ddddddd......',
+  '...EEE..EEE.....',
+  '..EEEE..EEEE....',
+  '..EEE....EEE....',
+  '..EE......EE....',
+  '.EEEE....EEEE...',
+  '.EEEE....EEEE...',
+];
+const KOOPA1 = [
+  '......ggggg.....',
+  '.....ggggggg....',
+  '.....gWKgggg....',
+  '.....gWKgggg....',
+  '.....ggggggg....',
+  '.....EEEEgg.....',
+  '....EEEE........',
+  '...dGGGGGd......',
+  '..dGgGGgGGd.....',
+  '.dGGgGGgGGGd....',
+  '.dGgggggggGd....',
+  '.dGGgGGgGGGd....',
+  '.dGgGGgGGGGd....',
+  '.dGGgggggGGd....',
+  '..dGGGGGGGd.....',
+  '...ddddddd......',
+  '....EEEEEE......',
+  '...EEEEEEE......',
+  '...EEE.EEE......',
+  '...EE..EEE......',
+  '..EEEE.EEEE.....',
+  '.......EEEE.....',
+];
+const SHELL = [
+  '....dddddddd....',
+  '..ddGGGGGGGGdd..',
+  '.dGGgGGggGGgGGd.',
+  '.dGgGGgGGgGGgGd.',
+  'dGGgGGgGGgGGgGGd',
+  'dGgggggggggggGGd',
+  'dGGgGGgGGgGGgGGd',
+  'dGgGGgGGgGGgGGGd',
+  '.dGGgGGggGGgGGd.',
+  '.dGGGGGGGGGGGGd.',
+  '..ddddddddddd...',
+  '.EEdddddddddEE..',
+  '.EEE........EEE.',
+  '................',
+];
+
+// ============================================================
+// 食人花（16x24，两帧 嘴开/嘴合）
+// ============================================================
+const PIRANHA0 = [
+  '....WW....WW....',
+  '...WRRW..WRRW...',
+  '..WRRRRWWRRRRW..',
+  '..WRRRRRRRRRRW..',
+  '.WRRWWRRRRWWRRW.',
+  '.WRRWWRRRRWWRRW.',
+  '.WRRRRRRRRRRRRW.',
+  '..WRRRRRRRRRRW..',
+  '..KWWWWWWWWWWK..',
+  '...KWWWWWWWWK...',
+  '....KKKKKKKK....',
+  '......dGGd......',
+  '..gg..dGGd..gg..',
+  '.gggg.dGGd.gggg.',
+  '.ggggggGGgggggg.',
+  '..gg..dGGd..gg..',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+];
+const PIRANHA1 = [
+  '................',
+  '................',
+  '....WWWWWWWW....',
+  '..WWRRRRRRRRWW..',
+  '.WRRRRRRRRRRRRW.',
+  '.WRRWWRRRRWWRRW.',
+  '.WRRWWRRRRWWRRW.',
+  '.WRRRRRRRRRRRRW.',
+  '..WRRRRRRRRRRW..',
+  '...KWWWWWWWWK...',
+  '....KKKKKKKK....',
+  '......dGGd......',
+  '..gg..dGGd..gg..',
+  '.gggg.dGGd.gggg.',
+  '.ggggggGGgggggg.',
+  '..gg..dGGd..gg..',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+  '......dGGd......',
+];
+
+// ============================================================
+// Boss 库王（32x32）
+// ============================================================
+const BOSS0 = [
+  '........gg......gg..............',
+  '.......gWWg....gWWg.............',
+  '.......gWWg....gWWg.............',
+  '......ggggggggggggg.............',
+  '.....gEEEEEEEEEEEEg.............',
+  '....gEEWWKEEEEWWKEEg............',
+  '....gEEWWKEEEEWWKEEg............',
+  '....gEEEEEEEEEEEEEEg............',
+  '...gEEEEEEEEEEEEEEEEg...........',
+  '...gEEKKKKKKKKKKKKEEg...........',
+  '...gEKWWWWWWWWWWWWKEg...........',
+  '...gEKWKWWKWWKWWKWKEg...........',
+  '...gEEKKKKKKKKKKKKEEg...........',
+  '....gEEEEEEEEEEEEEEg............',
+  '.....ggEEEEEEEEEEgg.............',
+  '....ddGGGGGGGGGGdd..............',
+  '...dGGgKgGGgKgGGGGd.............',
+  '..dGGgKKKgKKKgGGGGGd............',
+  '..dGGGgKgGGgKgGGGGGd..EE........',
+  '..dGGGGGGGGGGGGGGGGd.EEE........',
+  '..dGGgKgGGgKgGGGGGGdEEE.........',
+  '..dGgKKKgKKKgGGGGGGdEE..........',
+  '..dGGgKgGGgKgGGGGGdEE...........',
+  '...dGGGGGGGGGGGGGdEE............',
+  '....ddGGGGGGGGGdd...............',
+  '...EEEddddddddEEE...............',
+  '..EEEEE......EEEEE..............',
+  '..EEEE........EEEE..............',
+  '..EEE..........EEE..............',
+  '.EEEEE........EEEEE.............',
+  '.EEEEEE......EEEEEE.............',
+  '..KKKK........KKKK..............',
+];
+// ============================================================
+// 道具（16x16）
+// ============================================================
+const MUSHROOM = [
+  '.....KKKKKK.....',
+  '...KKRRRRRRKK...',
+  '..KRRWWRRRRRRK..',
+  '..KRWWWWRRWWRK..',
+  '.KRRWWWWRRWWWRK.',
+  '.KRWWWWRRRRWWRK.',
+  '.KRRWWRRRRRRRRK.',
+  '.KRRRRRRWWWWRRK.',
+  '.KKRRRRRWWWWRKK.',
+  '..KKKKKKKKKKKK..',
+  '..KEEEKEEKEEEK..',
+  '.KEEEEKEEKEEEEK.',
+  '.KEEEEEEEEEEEEK.',
+  '.KEEEEEEEEEEEEK.',
+  '..KEEEEEEEEEEK..',
+  '...KKKKKKKKKK...',
+];
+const FLOWER0 = [
+  '....KKKKKKKK....',
+  '...KFFFFFFFFK...',
+  '..KFWWFFFFWWFK..',
+  '..KFWWFFFFWWFK..',
+  '..KFFFWWWWFFFK..',
+  '...KFFWYYWFFK...',
+  '...KFFWYYWFFK...',
+  '..KFFFWWWWFFFK..',
+  '..KFWWFFFFWWFK..',
+  '...KFFFFFFFFK...',
+  '....KKKKKKKK....',
+  '......dGd.......',
+  '.ggg..dGd..ggg..',
+  '.gggggdGdggggg..',
+  '..ggg.dGd.ggg...',
+  '......dGd.......',
+];
+const STAR = [
+  '.......KK.......',
+  '......KYYK......',
+  '......KYYK......',
+  '.....KYYYYK.....',
+  '.KKKKKYYYYKKKKK.',
+  'KYYYYYYYYYYYYYYK',
+  '.KYYYYYYYYYYYYK.',
+  '..KYYKYYYYKYYK..',
+  '...KYYKYYKYYK...',
+  '...KYYYYYYYYK...',
+  '..KYYYYYYYYYYK..',
+  '..KYYYKYYKYYYK..',
+  '.KYYYK.KK.KYYYK.',
+  '.KYYK......KYYK.',
+  '.KYK........KYK.',
+  '..K..........K..',
+];
+const COIN0 = [
+  '.....KKKKKK.....',
+  '....KYYYYYYK....',
+  '...KYYWWYYYYK...',
+  '..KYYWWYYYYYYK..',
+  '..KYWWYYYYYYyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYWWYYYYYyyK..',
+  '..KYYWYYYYYyyK..',
+  '...KYYYYYYyyK...',
+  '....KYYYYyyK....',
+  '.....KKKKKK.....',
+  '................',
+];
+const COIN1 = [
+  '......KKKK......',
+  '.....KYYYYK.....',
+  '.....KYWYyK.....',
+  '....KYWWYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYYyyK....',
+  '....KYWYyyyK....',
+  '.....KYYYyK.....',
+  '.....KYYyyK.....',
+  '......KKKK......',
+  '................',
+];
+const COIN2 = [
+  '.......KK.......',
+  '......KYYK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '......KYyK......',
+  '.......KK.......',
+  '................',
+];
+const FIREBALL0 = [
+  '..KFF...',
+  '.KFFFL..',
+  'KFFLLLL.',
+  'KFLLWWL.',
+  '.FLLWWLL',
+  '.LLLLLL.',
+  '..LLLL..',
+  '........',
+];
+const FIREBALL1 = [
+  '..LLLL..',
+  '.LLLLLL.',
+  'LLWWLLF.',
+  'LWWLLFK.',
+  '.LLLFFK.',
+  '.LFFFK..',
+  '..FFK...',
+  '........',
+];
+const BOSSFIRE = [
+  '......KFFFLLLLll',
+  '..KKFFFLLWWLLLll',
+  'KFFFFLLLWWWWLLll',
+  '..KKFFFLLWWLLLll',
+  '......KFFFLLLLll',
+  '................',
+];
+
+// ============================================================
+// 地形瓦片（16x16）
+// ============================================================
+const GROUND = [
+  'PPPPPPPPPPPPPPPo',
+  'POOOOOOOPOOOOOOo',
+  'POOOOOOOPOOOOOOo',
+  'POOOOOOOPOOOOOOo',
+  'POOOOOOOPOOOOOOo',
+  'POOOOOOOPOOOOOOo',
+  'POOOOOOOPOOOOOOo',
+  'oooooooooooooooo',
+  'PPPPPPPoPPPPPPPP',
+  'OOOOOOPoPOOOOOOO',
+  'OOOOOOPoPOOOOOOO',
+  'OOOOOOPoPOOOOOOO',
+  'OOOOOOPoPOOOOOOO',
+  'OOOOOOPoPOOOOOOO',
+  'OOOOOOPoPOOOOOOO',
+  'oooooooooooooooo',
+];
+const BRICK = [
+  'PPPPPPPPPPPPPPPP',
+  'OOOOOOOOOOOOOOOO',
+  'OOOOOOOOOOOOOOOO',
+  'KKKKKKKKKKKKKKKK',
+  'OOOOOOOKOOOOOOOO',
+  'OOOOOOOKOOOOOOOO',
+  'OOOOOOOKOOOOOOOO',
+  'KKKKKKKKKKKKKKKK',
+  'OOOKOOOOOOOKOOOO',
+  'OOOKOOOOOOOKOOOO',
+  'OOOKOOOOOOOKOOOO',
+  'KKKKKKKKKKKKKKKK',
+  'OOOOOOOKOOOOOOOO',
+  'OOOOOOOKOOOOOOOO',
+  'OOOOOOOKOOOOOOOO',
+  'KKKKKKKKKKKKKKKK',
+];
+const QUESTION = [
+  'KKKKKKKKKKKKKKKK',
+  'KWYYYYYYYYYYYYWK',
+  'KYKYYYYYYYYYYKYK',
+  'KYYYYKKKKKYYYYYK',
+  'KYYYKKYYYKKYYYYK',
+  'KYYYKKYYYKKYYYYK',
+  'KYYYYYYYKKYYYYYK',
+  'KYYYYYYKKYYYYYYK',
+  'KYYYYYYKKYYYYYYK',
+  'KYYYYYYKKYYYYYYK',
+  'KYYYYYYYYYYYYYYK',
+  'KYYYYYYKKYYYYYYK',
+  'KYYYYYYKKYYYYYYK',
+  'KYYYYYYYYYYYYYYK',
+  'KWYYYYYYYYYYYYWK',
+  'KKKKKKKKKKKKKKKK',
+];
+const QEMPTY = [
+  'KKKKKKKKKKKKKKKK',
+  'KPOOOOOOOOOOOOPK',
+  'KOKOOOOOOOOOOKOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KOOOOOOOOOOOOOOK',
+  'KPOOOOOOOOOOOOPK',
+  'KKKKKKKKKKKKKKKK',
+];
+const BLOCK = [
+  'PPPPPPPPPPPPPPPK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'POOOOOOOOOOOOOoK',
+  'PoooooooooooooooK',
+  'KKKKKKKKKKKKKKKK',
+].map(r => r.slice(0, 16));
+const CASTLEBRICK = [
+  'AAAAAAAAAAAAAAAA',
+  'AaaaaaaaKaaaaaaa',
+  'AaaaaaaaKaaaaaaa',
+  'KKKKKKKKKKKKKKKK',
+  'AaaaKaaaaaaaKaaa',
+  'AaaaKaaaaaaaKaaa',
+  'AaaaKaaaaaaaKaaa',
+  'KKKKKKKKKKKKKKKK',
+  'AaaaaaaaKaaaaaaa',
+  'AaaaaaaaKaaaaaaa',
+  'AaaaaaaaKaaaaaaa',
+  'KKKKKKKKKKKKKKKK',
+  'AaaaKaaaaaaaKaaa',
+  'AaaaKaaaaaaaKaaa',
+  'AaaaKaaaaaaaKaaa',
+  'KKKKKKKKKKKKKKKK',
+];
+const LAVA0 = [
+  'lLlLLlLlLLlLlLLl',
+  'LlLLlLlLLlLlLLlL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLlLLLLlLLLLlLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLlLLLLLlLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLlLLLLlLLLLLLlL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLlLLLLLlLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLlLLLLlLLLLlLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLlLLLLLLLlLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+];
+const LAVA1 = [
+  'LlLLlLlLLlLlLLlL',
+  'lLlLLlLlLLlLlLLl',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLlLLLLLlLLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLlLLLLlLLLLlLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLlLLLLLLLlLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLlLLLLlLLLLlLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLlLLLLLlLLLL',
+  'LLLLLLLLLLLLLLLL',
+  'LLlLLLLlLLLLLLlL',
+  'LLLLLLLLLLLLLLLL',
+  'LLLLLLLLLLLLLLLL',
+];
+// 水管（左半 / 右半 / 管口加宽边）
+const PIPE_TL = [
+  'KKKKKKKKKKKKKKKK',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KggGGGGGGGGGGGGG',
+  'KKKKKKKKKKKKKKKK',
+  '..KggGGGGGGGGGGG',
+];
+const PIPE_TR = [
+  'KKKKKKKKKKKKKKKK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'GGGGGGGGdddddddK',
+  'KKKKKKKKKKKKKKKK',
+  'GGGGGGGGdddddK..',
+];
+const PIPE_BL = [
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+  '..KggGGGGGGGGGGG',
+];
+const PIPE_BR = [
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+  'GGGGGGGGdddddK..',
+];
+const POLE = [
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+];
+const POLETOP = [
+  '......gGGg......',
+  '.....gGGGGg.....',
+  '.....GGGGGG.....',
+  '.....GGGGGG.....',
+  '.....gGGGGg.....',
+  '......gGGg......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+  '.......aA.......',
+];
+const FLAG = [
+  'GGGGGGGGGGGGGG..',
+  'GWWGGGGGGGGG....',
+  'GWWWWGGGGGG.....',
+  'GGGWWWWGGG......',
+  'GGGGGWWG........',
+  'GGGGGGG.........',
+  'GGGGG...........',
+  'GGG.............',
+  'G...............',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+];
+const FRAG = [
+  'PPOO....',
+  'POOO....',
+  'OOOo....',
+  'Oooo....',
+  '........',
+  '........',
+  '........',
+  '........',
+];
+
+// ============================================================
+// 程序化绘制的背景元素
+// ============================================================
+function makeCloud(scene) {
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = 24;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff';
+  x.beginPath();
+  x.arc(12, 16, 8, 0, 7); x.arc(24, 12, 10, 0, 7); x.arc(36, 16, 8, 0, 7);
+  x.fill();
+  x.fillRect(8, 16, 32, 8);
+  scene.textures.addCanvas('cloud', c);
+}
+function makeBush(scene) {
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = 16;
+  const x = c.getContext('2d');
+  x.fillStyle = '#80d010';
+  x.beginPath();
+  x.arc(10, 12, 8, 0, 7); x.arc(24, 8, 10, 0, 7); x.arc(38, 12, 8, 0, 7);
+  x.fill();
+  x.fillRect(6, 10, 36, 6);
+  scene.textures.addCanvas('bush', c);
+}
+function makeHill(scene) {
+  const c = document.createElement('canvas');
+  c.width = 80; c.height = 40;
+  const x = c.getContext('2d');
+  x.fillStyle = '#00a800';
+  x.beginPath();
+  x.moveTo(0, 40); x.lineTo(40, 0); x.lineTo(80, 40);
+  x.closePath(); x.fill();
+  x.fillStyle = '#005800';
+  x.fillRect(20, 20, 3, 3); x.fillRect(50, 26, 3, 3); x.fillRect(36, 12, 3, 3);
+  scene.textures.addCanvas('hill', c);
+}
+function makeCastleFlagTex(scene) {
+  // 终点城堡 80x80
+  const c = document.createElement('canvas');
+  c.width = 80; c.height = 80;
+  const x = c.getContext('2d');
+  x.fillStyle = '#b0b0b0';
+  x.fillRect(16, 32, 48, 48);   // 主体
+  x.fillRect(0, 56, 80, 24);    // 底座
+  x.fillStyle = '#686868';
+  for (let i = 0; i < 5; i++) x.fillRect(16 + i * 10, 32, 5, 6);  // 城垛
+  for (let i = 0; i < 8; i++) x.fillRect(i * 10, 56, 5, 6);
+  x.fillStyle = '#000000';
+  x.fillRect(34, 56, 12, 24);   // 门
+  x.beginPath(); x.arc(40, 56, 6, Math.PI, 0); x.fill();
+  x.fillStyle = '#686868';
+  x.fillRect(24, 44, 8, 8); x.fillRect(48, 44, 8, 8);  // 窗
+  scene.textures.addCanvas('castle', c);
+}
+
+// ============================================================
+// 入口：生成全部纹理 + 动画
+// ============================================================
+const TextureFactory = {
+  generateAll(scene) {
+    // 主角
+    makeTex(scene, 'ps-idle', PS_IDLE);
+    makeTex(scene, 'ps-walk', PS_WALK);
+    makeTex(scene, 'ps-jump', PS_JUMP);
+    makeTex(scene, 'pb-idle', PB_IDLE);
+    makeTex(scene, 'pb-walk', PB_WALK);
+    makeTex(scene, 'pb-jump', PB_JUMP);
+    makeTex(scene, 'pf-idle', PB_IDLE, FIRE_SWAP);
+    makeTex(scene, 'pf-walk', PB_WALK, FIRE_SWAP);
+    makeTex(scene, 'pf-jump', PB_JUMP, FIRE_SWAP);
+    // 敌人
+    makeTex(scene, 'goomba0', GOOMBA);
+    makeTex(scene, 'goomba1', mirror(GOOMBA));
+    makeTex(scene, 'goomba-flat', GOOMBA_FLAT);
+    makeTex(scene, 'koopa0', KOOPA0);
+    makeTex(scene, 'koopa1', KOOPA1);
+    makeTex(scene, 'shell', SHELL);
+    makeTex(scene, 'piranha0', PIRANHA0);
+    makeTex(scene, 'piranha1', PIRANHA1);
+    makeTex(scene, 'boss0', BOSS0);
+    makeTex(scene, 'boss1', mirror(BOSS0));
+    // 道具
+    makeTex(scene, 'mushroom', MUSHROOM);
+    makeTex(scene, 'flower0', FLOWER0);
+    makeTex(scene, 'flower1', FLOWER0, { 'F': '#fcc000', 'Y': '#d82800' });
+    makeTex(scene, 'star', STAR);
+    makeTex(scene, 'coin0', COIN0);
+    makeTex(scene, 'coin1', COIN1);
+    makeTex(scene, 'coin2', COIN2);
+    makeTex(scene, 'fireball0', FIREBALL0);
+    makeTex(scene, 'fireball1', FIREBALL1);
+    makeTex(scene, 'bossfire', BOSSFIRE);
+    // 地形
+    makeTex(scene, 'ground', GROUND);
+    makeTex(scene, 'groundU', GROUND, { 'P': '#88d8d8', 'O': '#00a8a8', 'o': '#004858' });
+    makeTex(scene, 'brick', BRICK);
+    makeTex(scene, 'brickU', BRICK, { 'P': '#88d8d8', 'O': '#00a8a8', 'o': '#004858' });
+    makeTex(scene, 'question', QUESTION);
+    makeTex(scene, 'qempty', QEMPTY);
+    makeTex(scene, 'block', BLOCK);
+    makeTex(scene, 'blockU', BLOCK, { 'P': '#88d8d8', 'O': '#00a8a8', 'o': '#004858' });
+    makeTex(scene, 'castlebrick', CASTLEBRICK);
+    makeTex(scene, 'lava0', LAVA0);
+    makeTex(scene, 'lava1', LAVA1);
+    makeTex(scene, 'pipeTL', PIPE_TL);
+    makeTex(scene, 'pipeTR', PIPE_TR);
+    makeTex(scene, 'pipeBL', PIPE_BL);
+    makeTex(scene, 'pipeBR', PIPE_BR);
+    makeTex(scene, 'pole', POLE);
+    makeTex(scene, 'poletop', POLETOP);
+    makeTex(scene, 'flag', FLAG);
+    makeTex(scene, 'frag', FRAG);
+    // 背景
+    makeCloud(scene);
+    makeBush(scene);
+    makeHill(scene);
+    makeCastleFlagTex(scene);
+  },
+
+  createAnims(scene) {
+    const A = scene.anims;
+    const mk = (key, frames, rate, repeat) => {
+      if (A.exists(key)) return;
+      A.create({ key, frames: frames.map(f => ({ key: f })), frameRate: rate, repeat });
+    };
+    mk('ps-run', ['ps-idle', 'ps-walk'], 10, -1);
+    mk('pb-run', ['pb-idle', 'pb-walk'], 10, -1);
+    mk('pf-run', ['pf-idle', 'pf-walk'], 10, -1);
+    mk('goomba-walk', ['goomba0', 'goomba1'], 5, -1);
+    mk('koopa-walk', ['koopa0', 'koopa1'], 5, -1);
+    mk('piranha-chomp', ['piranha0', 'piranha1'], 3, -1);
+    mk('boss-walk', ['boss0', 'boss1'], 4, -1);
+    mk('coin-spin', ['coin0', 'coin1', 'coin2', 'coin1'], 8, -1);
+    mk('fireball-spin', ['fireball0', 'fireball1'], 10, -1);
+    mk('flower-glow', ['flower0', 'flower1'], 4, -1);
+    mk('lava-bubble', ['lava0', 'lava1'], 3, -1);
+  },
+};
