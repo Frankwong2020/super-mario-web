@@ -61,6 +61,29 @@ function mirror(rows) {
   return rows.map(r => r.split('').reverse().join(''));
 }
 
+// 玩家纹理：像素图 + 可选自定义人脸覆盖（导入照片功能）
+const FACE_SMALL = { x: 4, y: 2, w: 10, h: 5 };
+const FACE_BIG = { x: 4, y: 3, w: 10, h: 6 };
+
+function makePlayerTex(scene, key, rows, overrides, faceRect) {
+  const h = rows.length, w = rows[0].length;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const c = colorOf(rows[y][x], overrides);
+      if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  if (AVATAR.faceCanvas && faceRect) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(AVATAR.faceCanvas, faceRect.x, faceRect.y, faceRect.w, faceRect.h);
+  }
+  if (scene.textures.exists(key)) scene.textures.remove(key);
+  scene.textures.addCanvas(key, canvas);
+}
+
 // ============================================================
 // 主角（小形态 16x16）
 // ============================================================
@@ -867,6 +890,62 @@ function makeHill(scene) {
   x.fillRect(20, 20, 3, 3); x.fillRect(50, 26, 3, 3); x.fillRect(36, 12, 3, 3);
   scene.textures.addCanvas('hill', c);
 }
+function makeGradient(scene, key, stops) {
+  const c = document.createElement('canvas');
+  c.width = 32; c.height = 480;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 480);
+  stops.forEach(([pos, color]) => g.addColorStop(pos, color));
+  x.fillStyle = g;
+  x.fillRect(0, 0, 32, 480);
+  if (scene.textures.exists(key)) scene.textures.remove(key);
+  scene.textures.addCanvas(key, c);
+}
+function makeSun(scene) {
+  const c = document.createElement('canvas');
+  c.width = 96; c.height = 96;
+  const x = c.getContext('2d');
+  const glow = x.createRadialGradient(48, 48, 18, 48, 48, 48);
+  glow.addColorStop(0, 'rgba(255,250,200,0.95)');
+  glow.addColorStop(0.5, 'rgba(255,240,160,0.35)');
+  glow.addColorStop(1, 'rgba(255,240,160,0)');
+  x.fillStyle = glow;
+  x.fillRect(0, 0, 96, 96);
+  x.fillStyle = '#fff8d0';
+  x.beginPath(); x.arc(48, 48, 20, 0, 7); x.fill();
+  scene.textures.addCanvas('sun', c);
+}
+function makeMountain(scene) {
+  const c = document.createElement('canvas');
+  c.width = 192; c.height = 80;
+  const x = c.getContext('2d');
+  x.fillStyle = '#2e7d4f';
+  x.beginPath(); x.moveTo(0, 80); x.lineTo(64, 8); x.lineTo(128, 80); x.closePath(); x.fill();
+  x.fillStyle = '#256b42';
+  x.beginPath(); x.moveTo(72, 80); x.lineTo(140, 24); x.lineTo(192, 80); x.closePath(); x.fill();
+  x.fillStyle = '#e8f4ff';
+  x.beginPath(); x.moveTo(56, 17); x.lineTo(64, 8); x.lineTo(72, 17); x.lineTo(64, 22); x.closePath(); x.fill();
+  scene.textures.addCanvas('mountain', c);
+}
+function makeSpark(scene) {
+  const c = document.createElement('canvas');
+  c.width = 9; c.height = 9;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff6b0';
+  x.fillRect(4, 0, 1, 9); x.fillRect(0, 4, 9, 1);
+  x.fillStyle = '#ffffff';
+  x.fillRect(4, 3, 1, 3); x.fillRect(3, 4, 3, 1);
+  scene.textures.addCanvas('spark', c);
+}
+function makeDust(scene) {
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const x = c.getContext('2d');
+  x.fillStyle = 'rgba(240,235,220,0.9)';
+  x.beginPath(); x.arc(4, 4, 3, 0, 7); x.fill();
+  scene.textures.addCanvas('dust', c);
+}
+
 function makeCastleFlagTex(scene) {
   // 终点城堡 80x80
   const c = document.createElement('canvas');
@@ -890,17 +969,21 @@ function makeCastleFlagTex(scene) {
 // 入口：生成全部纹理 + 动画
 // ============================================================
 const TextureFactory = {
+  // 主角纹理单独生成，导入头像后可在线重建
+  generatePlayers(scene) {
+    makePlayerTex(scene, 'ps-idle', PS_IDLE, null, FACE_SMALL);
+    makePlayerTex(scene, 'ps-walk', PS_WALK, null, FACE_SMALL);
+    makePlayerTex(scene, 'ps-jump', PS_JUMP, null, FACE_SMALL);
+    makePlayerTex(scene, 'pb-idle', PB_IDLE, null, FACE_BIG);
+    makePlayerTex(scene, 'pb-walk', PB_WALK, null, FACE_BIG);
+    makePlayerTex(scene, 'pb-jump', PB_JUMP, null, FACE_BIG);
+    makePlayerTex(scene, 'pf-idle', PB_IDLE, FIRE_SWAP, FACE_BIG);
+    makePlayerTex(scene, 'pf-walk', PB_WALK, FIRE_SWAP, FACE_BIG);
+    makePlayerTex(scene, 'pf-jump', PB_JUMP, FIRE_SWAP, FACE_BIG);
+  },
+
   generateAll(scene) {
-    // 主角
-    makeTex(scene, 'ps-idle', PS_IDLE);
-    makeTex(scene, 'ps-walk', PS_WALK);
-    makeTex(scene, 'ps-jump', PS_JUMP);
-    makeTex(scene, 'pb-idle', PB_IDLE);
-    makeTex(scene, 'pb-walk', PB_WALK);
-    makeTex(scene, 'pb-jump', PB_JUMP);
-    makeTex(scene, 'pf-idle', PB_IDLE, FIRE_SWAP);
-    makeTex(scene, 'pf-walk', PB_WALK, FIRE_SWAP);
-    makeTex(scene, 'pf-jump', PB_JUMP, FIRE_SWAP);
+    this.generatePlayers(scene);
     // 敌人
     makeTex(scene, 'goomba0', GOOMBA);
     makeTex(scene, 'goomba1', mirror(GOOMBA));
@@ -948,6 +1031,14 @@ const TextureFactory = {
     makeBush(scene);
     makeHill(scene);
     makeCastleFlagTex(scene);
+    // 氛围与特效
+    makeGradient(scene, 'sky-day', [[0, '#5ab0f8'], [0.55, '#8fd0ff'], [1, '#cfeeff']]);
+    makeGradient(scene, 'sky-cave', [[0, '#05051a'], [0.6, '#10103a'], [1, '#1c1c50']]);
+    makeGradient(scene, 'sky-castle', [[0, '#16090b'], [0.6, '#2a1014'], [1, '#3c1418']]);
+    makeSun(scene);
+    makeMountain(scene);
+    makeSpark(scene);
+    makeDust(scene);
   },
 
   createAnims(scene) {

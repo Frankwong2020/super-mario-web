@@ -27,7 +27,14 @@ class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH + 200);
     this.physics.world.setBoundsCollision(true, true, false, false);
 
-    if (theme.deco) this.buildDeco(worldW);
+    // 渐变天空（随主题）
+    const skyTex = { overworld: 'sky-day', underground: 'sky-cave', castle: 'sky-castle' }[level.theme];
+    this.add.image(512, worldH / 2, skyTex).setDisplaySize(1024, worldH)
+      .setScrollFactor(0).setDepth(-10);
+    if (theme.deco) {
+      this.add.image(880, 84, 'sun').setScale(1.3).setScrollFactor(0.05).setDepth(-9);
+      this.buildDeco(worldW);
+    }
 
     // 物理分组
     this.solids = this.physics.add.staticGroup();
@@ -61,7 +68,7 @@ class GameScene extends Phaser.Scene {
     this.timerEvent = this.time.addEvent({
       delay: 1000, loop: true,
       callback: () => {
-        if (this.levelClearing || this.player.dying) return;
+        if (this.levelClearing || this.player.dying || this.introActive) return;
         this.timeLeft--;
         this.registry.set('time', this.timeLeft);
         if (this.timeLeft <= 0) this.player.die();
@@ -69,7 +76,7 @@ class GameScene extends Phaser.Scene {
     });
 
     this.input.keyboard.on('keydown-M', this.onMuteKey, this);
-    AUDIO.playMusic(level.music);
+    this.showIntro(level);
 
     // 场景关闭/重启时统一清理（音乐定时器、全局键监听、计时器）
     this.events.once('shutdown', () => {
@@ -83,8 +90,12 @@ class GameScene extends Phaser.Scene {
     AUDIO.toggleMute();
   }
 
-  // ---------- 背景装饰（草原主题） ----------
+  // ---------- 背景装饰（草原主题，多层视差） ----------
   buildDeco(worldW) {
+    for (let x = 150; x < worldW / 0.25 + 400; x += 560) {
+      this.add.image(x, 13 * TILE - 38, 'mountain')
+        .setScale(1.5).setAlpha(0.75).setScrollFactor(0.25).setDepth(-4);
+    }
     for (let x = 100; x < worldW / 0.4; x += 380) {
       this.add.image(x, 70 + (x / 380 % 3) * 35, 'cloud')
         .setScale(1.5 + (x / 380 % 2) * 0.7).setScrollFactor(0.4).setDepth(-2);
@@ -93,6 +104,28 @@ class GameScene extends Phaser.Scene {
       this.add.image(x, 13 * TILE - 28, 'hill').setScale(1.6).setScrollFactor(0.7).setDepth(-2);
       this.add.image(x + 260, 13 * TILE - 11, 'bush').setScale(1.4).setScrollFactor(0.7).setDepth(-2);
     }
+  }
+
+  // ---------- 开关过场卡片（经典 "世界 x-x" 黑屏） ----------
+  showIntro(level) {
+    this.introActive = true;
+    this.physics.pause();
+    const cover = this.add.rectangle(512, 240, 1024, 480, 0x000000)
+      .setScrollFactor(0).setDepth(99);
+    const t1 = this.add.text(512, 195, level.name, {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '40px', fontStyle: 'bold', color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    const icon = this.add.image(478, 262, 'ps-idle').setScale(2)
+      .setScrollFactor(0).setDepth(100);
+    const t2 = this.add.text(500, 262, ` × ${this.registry.get('lives')}`, {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '26px', color: '#ffffff',
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
+    this.time.delayedCall(1500, () => {
+      [cover, t1, icon, t2].forEach(o => o.destroy());
+      this.physics.resume();
+      this.introActive = false;
+      AUDIO.playMusic(level.music);
+    });
   }
 
   // ---------- 地图解析 ----------
@@ -174,6 +207,7 @@ class GameScene extends Phaser.Scene {
       item.destroy();
     });
     P.add.overlap(this.player, this.coinsGroup, (player, coin) => {
+      coinSparkle(this, coin.x, coin.y);
       coin.destroy();
       this.collectCoin();
     });

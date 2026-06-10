@@ -121,6 +121,28 @@ function brickBurst(scene, x, y) {
   }
 }
 
+// 金币收集火花
+function coinSparkle(scene, x, y) {
+  for (const [dx, dy] of [[-14, -10], [14, -10], [0, -20], [0, 4]]) {
+    const s = scene.add.image(x, y, 'spark').setScale(1.2).setDepth(16);
+    scene.tweens.add({
+      targets: s, x: x + dx, y: y + dy, alpha: 0, angle: 90, scale: 0.4,
+      duration: 320, onComplete: () => s.destroy(),
+    });
+  }
+}
+
+// 落地烟尘
+function spawnDust(scene, x, y) {
+  for (const dx of [-10, 10]) {
+    const d = scene.add.image(x + dx, y - 3, 'dust').setScale(1.5).setAlpha(0.8).setDepth(9);
+    scene.tweens.add({
+      targets: d, x: x + dx * 2.4, y: y - 10, alpha: 0, scale: 0.5,
+      duration: 280, onComplete: () => d.destroy(),
+    });
+  }
+}
+
 // 块里弹出的金币特效
 function coinPop(scene, x, y) {
   const c = scene.add.sprite(x, y, 'coin0').setScale(2).setDepth(15);

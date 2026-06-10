@@ -62,6 +62,13 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     else if (right) { this.setVelocityX(speed); this.setFlipX(false); }
     else this.setVelocityX(0);
 
+    // 落地烟尘
+    if (onFloor && !this.wasOnFloor && this.peakFallSpeed > 380) {
+      spawnDust(this.scene, this.x, this.body.bottom);
+    }
+    this.peakFallSpeed = onFloor ? 0 : Math.max(this.peakFallSpeed || 0, this.body.velocity.y);
+    this.wasOnFloor = onFloor;
+
     // 跳跃（可变高度）
     if (jump && onFloor && !this.jumpHeld) {
       this.setVelocityY(-560);

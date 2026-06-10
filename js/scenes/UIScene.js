@@ -9,15 +9,22 @@ class UIScene extends Phaser.Scene {
 
   create() {
     const W = this.scale.gameSize.width;
+    // HUD 半透明面板条
+    const panel = this.add.graphics();
+    panel.fillStyle(0x000000, 0.35);
+    panel.fillRoundedRect(8, 6, W - 16, 40, 10);
+    panel.lineStyle(2, 0xffffff, 0.15);
+    panel.strokeRoundedRect(8, 6, W - 16, 40, 10);
+
     const style = {
       fontFamily: '"Microsoft YaHei", monospace', fontSize: '20px',
       color: '#ffffff', stroke: '#000000', strokeThickness: 4,
     };
-    this.scoreText = this.add.text(20, 12, '', style);
-    this.coinText = this.add.text(280, 12, '', style);
-    this.worldText = this.add.text(450, 12, '', style).setOrigin(0, 0);
-    this.timeText = this.add.text(680, 12, '', style);
-    this.livesText = this.add.text(850, 12, '', style);
+    this.scoreText = this.add.text(24, 14, '', style);
+    this.coinText = this.add.text(280, 14, '', style);
+    this.worldText = this.add.text(450, 14, '', style).setOrigin(0, 0);
+    this.timeText = this.add.text(680, 14, '', style);
+    this.livesText = this.add.text(850, 14, '', style);
 
     // 静音按钮
     this.muteBtn = this.add.text(W - 50, 12, '🔊', { fontSize: '24px' })
@@ -41,17 +48,23 @@ class UIScene extends Phaser.Scene {
   }
 
   makeButton(x, y, r, label, key) {
-    const zone = this.add.circle(x, y, r, 0xffffff, 0.25)
+    const zone = this.add.circle(x, y, r, 0xffffff, 0.22)
       .setStrokeStyle(3, 0xffffff, 0.5)
       .setScrollFactor(0).setDepth(50)
       .setInteractive();
-    this.add.text(x, y, label, {
+    const txt = this.add.text(x, y, label, {
       fontFamily: 'sans-serif', fontSize: `${r}px`, color: '#ffffff',
     }).setOrigin(0.5).setDepth(51).setAlpha(0.8);
-    zone.on('pointerdown', () => this.setTouchFlag(key, true));
-    zone.on('pointerover', (p) => { if (p.isDown) this.setTouchFlag(key, true); });
-    zone.on('pointerup', () => this.setTouchFlag(key, false));
-    zone.on('pointerout', () => this.setTouchFlag(key, false));
+    const press = (on) => {
+      this.setTouchFlag(key, on);
+      zone.setFillStyle(0xffffff, on ? 0.45 : 0.22);
+      zone.setScale(on ? 1.12 : 1);
+      txt.setScale(on ? 1.12 : 1);
+    };
+    zone.on('pointerdown', () => press(true));
+    zone.on('pointerover', (p) => { if (p.isDown) press(true); });
+    zone.on('pointerup', () => press(false));
+    zone.on('pointerout', () => press(false));
   }
 
   buildTouchControls() {
