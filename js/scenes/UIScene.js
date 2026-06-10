@@ -35,7 +35,106 @@ class UIScene extends Phaser.Scene {
         if (e) e.stopPropagation();
       });
 
+    // 暂停按钮 + ESC/P 快捷键
+    this.pauseOpen = false;
+    this.add.text(W - 96, 12, '⏸', { fontSize: '24px' })
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', (p, x, y, e) => {
+        this.togglePause();
+        if (e) e.stopPropagation();
+      });
+    this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard.on('keydown-P', () => this.togglePause());
+
     if (this.isTouchDevice()) this.buildTouchControls();
+  }
+
+  // ---------- 暂停菜单 ----------
+  togglePause() {
+    if (this.pauseOpen) this.closePause();
+    else this.openPause();
+  }
+
+  openPause() {
+    const gs = this.scene.get('GameScene');
+    if (this.pauseOpen || !gs.scene.isActive()) return;
+    this.pauseOpen = true;
+    this.pausedSong = AUDIO.currentSong;
+    AUDIO.stopMusic();
+    this.scene.pause('GameScene');
+
+    const W = 1024, H = 480;
+    const c = this.add.container(0, 0).setDepth(200);
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(0x1c2438, 0.96); g.fillRoundedRect(W / 2 - 175, 78, 350, 324, 18);
+    g.lineStyle(3, 0xffffff, 0.25); g.strokeRoundedRect(W / 2 - 175, 78, 350, 324, 18);
+    const title = this.add.text(W / 2, 124, '⏸ 暂 停', {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '34px', fontStyle: 'bold',
+      color: '#ffffff', stroke: '#000000', strokeThickness: 5,
+    }).setOrigin(0.5);
+    c.add([dim, g, title]);
+
+    this.menuButton(c, W / 2, 190, '▶ 继续游戏', 0x00a800, 0x005800, () => this.closePause());
+    this.menuButton(c, W / 2, 258, '↺ 重新开始本关', 0x2068e8, 0x103880, () => this.restartLevel());
+    this.menuButton(c, W / 2, 326, '🏠 返回主菜单', 0x9a3030, 0x501414, () => this.backToMenu());
+    const hint = this.add.text(W / 2, 378, 'ESC / P 继续', {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '14px', color: '#8898b8',
+    }).setOrigin(0.5);
+    c.add(hint);
+    this.pausePanel = c;
+  }
+
+  menuButton(container, x, y, label, color, edge, onClick) {
+    const w = 270, h = 52;
+    const g = this.add.graphics();
+    const draw = (fill) => {
+      g.clear();
+      g.fillStyle(0x000000, 0.3); g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 4, w, h, 13);
+      g.fillStyle(fill, 1); g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 13);
+      g.lineStyle(3, edge, 1); g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 13);
+    };
+    draw(color);
+    const txt = this.add.text(x, y, label, {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '21px', fontStyle: 'bold',
+      color: '#ffffff', stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5);
+    const zone = this.add.zone(x, y, w, h).setInteractive({ useHandCursor: true });
+    const lighten = Phaser.Display.Color.IntegerToColor(color).brighten(18).color;
+    zone.on('pointerover', () => draw(lighten));
+    zone.on('pointerout', () => draw(color));
+    zone.on('pointerdown', () => draw(edge));
+    zone.on('pointerup', () => { draw(color); onClick(); });
+    container.add([g, txt, zone]);
+  }
+
+  destroyPausePanel() {
+    if (this.pausePanel) { this.pausePanel.destroy(); this.pausePanel = null; }
+    this.pauseOpen = false;
+  }
+
+  closePause() {
+    if (!this.pauseOpen) return;
+    this.destroyPausePanel();
+    this.scene.resume('GameScene');
+    if (this.pausedSong) AUDIO.playMusic(this.pausedSong);
+  }
+
+  restartLevel() {
+    const gs = this.scene.get('GameScene');
+    const level = gs.levelIndex;
+    this.destroyPausePanel();
+    this.registry.set('touch', {});
+    gs.scene.resume();
+    gs.scene.restart({ level });
+  }
+
+  backToMenu() {
+    this.destroyPausePanel();
+    AUDIO.stopMusic();
+    this.registry.set('touch', {});
+    this.scene.stop('GameScene');
+    this.scene.start('MenuScene', { mode: 'title' });
   }
 
   isTouchDevice() {

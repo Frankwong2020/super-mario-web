@@ -76,7 +76,8 @@ class MenuScene extends Phaser.Scene {
     pvBg.fillStyle(0xffffff, 0.25); pvBg.fillRoundedRect(-58, -78, 116, 150, 12);
     pvBg.lineStyle(3, 0xffffff, 0.6); pvBg.strokeRoundedRect(-58, -78, 116, 150, 12);
     pv.add(pvBg);
-    pv.add(this.add.image(0, -14, 'pb-idle').setScale(4));
+    this.previewImg = this.add.image(0, -14, 'pb-idle').setScale(4);
+    pv.add(this.previewImg);
     pv.add(this.add.text(0, 52, '当前主角', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '15px', color: '#ffffff',
       stroke: '#000000', strokeThickness: 3,
@@ -89,11 +90,16 @@ class MenuScene extends Phaser.Scene {
       () => this.importAvatar());
     if (AVATAR.faceCanvas) {
       this.makeButton(W / 2, 414, 230, 40, '↺ 恢复默认主角', 0x707070, 0x383838, '16px',
-        () => { AVATAR.clear(); TextureFactory.generatePlayers(this); this.scene.restart({ mode: 'title' }); });
+        () => {
+          AVATAR.clear();
+          this.previewImg.destroy();           // 先销毁预览，再重建纹理，避免悬空帧
+          TextureFactory.generatePlayers(this);
+          this.scene.restart({ mode: 'title' });
+        });
     }
 
     // 操作说明
-    this.add.text(W / 2, H - 22, '⌨ 方向键/WASD 移动 · 空格/↑ 跳跃 · X/J 火球 · M 静音 · 📱 手机有虚拟按键', {
+    this.add.text(W / 2, H - 22, '⌨ 方向键/WASD 移动 · 空格/↑ 跳跃 · X/J 火球 · ESC 暂停 · M 静音 · 📱 手机有虚拟按键', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '15px', color: '#ffffff',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(5);
@@ -125,6 +131,7 @@ class MenuScene extends Phaser.Scene {
   importAvatar() {
     AVATAR.importFromFile((ok) => {
       if (!ok) return;
+      this.previewImg.destroy();               // 先销毁预览，再重建纹理，避免悬空帧
       TextureFactory.generatePlayers(this);
       this.scene.restart({ mode: 'title' });   // 重建预览
     });
