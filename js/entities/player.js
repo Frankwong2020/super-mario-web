@@ -6,13 +6,14 @@
 
 const FORM_SMALL = 0, FORM_BIG = 1, FORM_FIRE = 2;
 const FORM_PREFIX = ['ps', 'pb', 'pf'];
+const PLAYER_SCALE = 1.5;   // 立绘显示放大倍数（脸更大更醒目）
 
 class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'ps-idle');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(1).setDepth(10);   // 高精度立绘为原生像素尺寸
+    this.setScale(PLAYER_SCALE).setDepth(10);
     this.setCollideWorldBounds(false);
 
     this.form = scene.registry.get('form') ?? FORM_SMALL;
