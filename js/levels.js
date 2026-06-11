@@ -10,6 +10,11 @@
 const ROWS = 15;          // 视野高 15 格（每格 32px = 480px）
 const GROUND_ROW = 13;    // 地面顶行
 
+// 逻辑分辨率（所有游戏坐标基于此）与渲染超采样倍数
+const VIEW_W = 1024;
+const VIEW_H = 480;
+const RENDER_SCALE = 2;   // 画布实际 2048x960，摄像机 zoom 2 渲染，更清晰
+
 class LevelBuilder {
   constructor(cols) {
     this.cols = cols;

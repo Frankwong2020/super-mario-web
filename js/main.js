@@ -7,8 +7,8 @@
 const config = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 1024,
-  height: 480,
+  width: VIEW_W * RENDER_SCALE,    // 2048x960 超采样画布，配合各场景摄像机 zoom
+  height: VIEW_H * RENDER_SCALE,
   pixelArt: true,
   backgroundColor: '#000000',
   physics: {

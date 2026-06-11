@@ -10,7 +10,8 @@ class MenuScene extends Phaser.Scene {
   create(data) {
     const mode = data.mode || 'title';
     this.started = false;
-    const W = this.scale.gameSize.width, H = this.scale.gameSize.height;
+    const W = VIEW_W, H = VIEW_H;
+    this.cameras.main.setZoom(RENDER_SCALE).centerOn(W / 2, H / 2);
 
     if (mode === 'title') {
       this.buildTitle(W, H);

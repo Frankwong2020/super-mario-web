@@ -27,12 +27,13 @@ class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH + 200);
     this.physics.world.setBoundsCollision(true, true, false, false);
 
-    // 渐变天空（随主题）
+    // 渐变天空 / 太阳：世界对象，update 里跟随镜头中心（zoom 下 scrollFactor 0 不可靠）
     const skyTex = { overworld: 'sky-day', underground: 'sky-cave', castle: 'sky-castle' }[level.theme];
-    this.add.image(512, worldH / 2, skyTex).setDisplaySize(1024, worldH)
-      .setScrollFactor(0).setDepth(-10);
+    this.skyImg = this.add.image(512, worldH / 2, skyTex)
+      .setDisplaySize(VIEW_W + 8, worldH).setDepth(-10);
+    this.sunImg = null;
     if (theme.deco) {
-      this.add.image(880, 84, 'sun').setScale(1.3).setScrollFactor(0.05).setDepth(-9);
+      this.sunImg = this.add.image(880, 84, 'sun').setScale(1.3).setDepth(-9);
       this.buildDeco(worldW);
     }
 
@@ -54,7 +55,8 @@ class GameScene extends Phaser.Scene {
 
     this.setupColliders();
 
-    // 摄像机
+    // 摄像机（zoom = 超采样倍数，渲染更清晰）
+    this.cameras.main.setZoom(RENDER_SCALE);
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.1);
 
@@ -91,35 +93,42 @@ class GameScene extends Phaser.Scene {
   }
 
   // ---------- 背景装饰（草原主题，多层视差） ----------
+  // 缩放摄像机下 scrollFactor<1 的层会整体偏移 (canvas-view)/2*f，需按系数补偿位置
   buildDeco(worldW) {
+    // 渲染公式 screen = zoom*(pos - scroll*f) - offset，基础滚动为负半幅，
+    // 故 sf<1 层需加 (1-f)*半幅 补偿（x 以镜头停在最左时对齐）
+    const ox = (VIEW_W * RENDER_SCALE - VIEW_W) / 2;   // 512
+    const oy = (VIEW_H * RENDER_SCALE - VIEW_H) / 2;   // 240
+    const deco = (x, y, tex, f, scale, alpha, depth) => {
+      this.add.image(x + ox * (1 - f), y + oy * (1 - f), tex)
+        .setScale(scale).setAlpha(alpha).setScrollFactor(f).setDepth(depth);
+    };
     for (let x = 150; x < worldW / 0.25 + 400; x += 560) {
-      this.add.image(x, 13 * TILE - 38, 'mountain')
-        .setScale(1.5).setAlpha(0.75).setScrollFactor(0.25).setDepth(-4);
+      deco(x, 13 * TILE - 38, 'mountain', 0.25, 1.5, 0.75, -4);
     }
     for (let x = 100; x < worldW / 0.4; x += 380) {
-      this.add.image(x, 70 + (x / 380 % 3) * 35, 'cloud')
-        .setScale(1.5 + (x / 380 % 2) * 0.7).setScrollFactor(0.4).setDepth(-2);
+      deco(x, 70 + (x / 380 % 3) * 35, 'cloud', 0.4, 1.5 + (x / 380 % 2) * 0.7, 1, -2);
     }
     for (let x = 60; x < worldW / 0.7; x += 520) {
-      this.add.image(x, 13 * TILE - 28, 'hill').setScale(1.6).setScrollFactor(0.7).setDepth(-2);
-      this.add.image(x + 260, 13 * TILE - 11, 'bush').setScale(1.4).setScrollFactor(0.7).setDepth(-2);
+      deco(x, 13 * TILE - 28, 'hill', 0.7, 1.6, 1, -2);
+      deco(x + 260, 13 * TILE - 11, 'bush', 0.7, 1.4, 1, -2);
     }
   }
 
-  // ---------- 开关过场卡片（经典 "世界 x-x" 黑屏） ----------
+  // ---------- 开关过场卡片（经典 "世界 x-x" 黑屏，关卡开头镜头固定在 512,240） ----------
   showIntro(level) {
     this.introActive = true;
     this.physics.pause();
-    const cover = this.add.rectangle(512, 240, 1024, 480, 0x000000)
-      .setScrollFactor(0).setDepth(99);
+    const cover = this.add.rectangle(512, 240, VIEW_W + 8, VIEW_H + 8, 0x000000)
+      .setDepth(99);
     const t1 = this.add.text(512, 195, level.name, {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '40px', fontStyle: 'bold', color: '#ffffff',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    }).setOrigin(0.5).setDepth(100);
     const icon = this.add.image(478, 262, 'ps-idle').setScale(2)
-      .setScrollFactor(0).setDepth(100);
+      .setDepth(100);
     const t2 = this.add.text(500, 262, ` × ${this.registry.get('lives')}`, {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '26px', color: '#ffffff',
-    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
+    }).setOrigin(0, 0.5).setDepth(100);
     this.time.delayedCall(1500, () => {
       [cover, t1, icon, t2].forEach(o => o.destroy());
       this.physics.resume();
@@ -416,6 +425,11 @@ class GameScene extends Phaser.Scene {
 
   update(time) {
     this.player.update(time);
+
+    // 天空与太阳跟随镜头（视觉上等同屏幕固定）
+    const mid = this.cameras.main.midPoint;
+    this.skyImg.setPosition(mid.x, mid.y);
+    if (this.sunImg) this.sunImg.setPosition(mid.x + 368, mid.y - 156);
 
     // 掉坑死亡
     if (!this.player.dying && this.player.y > ROWS * TILE + 80) this.player.die();

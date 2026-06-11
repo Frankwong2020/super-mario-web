@@ -8,7 +8,8 @@ class UIScene extends Phaser.Scene {
   constructor() { super('UIScene'); }
 
   create() {
-    const W = this.scale.gameSize.width;
+    const W = VIEW_W;
+    this.cameras.main.setZoom(RENDER_SCALE).centerOn(VIEW_W / 2, VIEW_H / 2);
     // HUD 半透明面板条
     const panel = this.add.graphics();
     panel.fillStyle(0x000000, 0.35);
@@ -167,7 +168,7 @@ class UIScene extends Phaser.Scene {
   }
 
   buildTouchControls() {
-    const H = this.scale.gameSize.height;   // 多点触控数量已在 main.js 的 activePointers 配置
+    const H = VIEW_H;   // 多点触控数量已在 main.js 的 activePointers 配置
     this.makeButton(80, H - 70, 42, '◀', 'left');
     this.makeButton(190, H - 70, 42, '▶', 'right');
     this.makeButton(944, H - 60, 46, 'A', 'jump');
