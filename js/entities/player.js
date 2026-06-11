@@ -45,7 +45,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
   get touch() { return this.scene.registry.get('touch') || {}; }
 
-  update(time) {
+  update(time, delta) {
     if (this.dying || !this.body) return;
     if (this.frozen) { this.setVelocityX(0); return; }
 
@@ -56,12 +56,25 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     const fire = k.fire.isDown || k.fire2.isDown || t.fire;
     const onFloor = this.body.blocked.down;
     const prefix = FORM_PREFIX[this.form];
+    const dt = (delta || 16.7) / 1000;
 
-    // 水平移动
-    const speed = 210;
-    if (left) { this.setVelocityX(-speed); this.setFlipX(true); }
-    else if (right) { this.setVelocityX(speed); this.setFlipX(false); }
-    else this.setVelocityX(0);
+    // 水平移动：按住火球键 = 助跑（经典 B 键），带惯性加减速
+    const running = fire;
+    const maxSpeed = running ? 330 : 200;
+    const targetV = left ? -maxSpeed : right ? maxSpeed : 0;
+    const curV = this.body.velocity.x;
+    let accel = 1000;
+    if (targetV === 0) accel = 1500;                                        // 松手摩擦
+    else if (curV !== 0 && Math.sign(targetV) !== Math.sign(curV)) {
+      accel = 2000;                                                          // 急转弯刹车
+      if (onFloor && Math.abs(curV) > 260) spawnDust(this.scene, this.x, this.body.bottom);
+    }
+    if (!onFloor) accel *= 0.65;                                             // 空中操控减弱
+    const dv = accel * dt;
+    if (Math.abs(targetV - curV) <= dv) this.setVelocityX(targetV);
+    else this.setVelocityX(curV + Math.sign(targetV - curV) * dv);
+    if (left) this.setFlipX(true);
+    else if (right) this.setFlipX(false);
 
     // 落地烟尘
     if (onFloor && !this.wasOnFloor && this.peakFallSpeed > 380) {
@@ -70,28 +83,30 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     this.peakFallSpeed = onFloor ? 0 : Math.max(this.peakFallSpeed || 0, this.body.velocity.y);
     this.wasOnFloor = onFloor;
 
-    // 跳跃（可变高度）
+    // 跳跃（可变高度；助跑时跳得更高更远）
     if (jump && onFloor && !this.jumpHeld) {
-      this.setVelocityY(-560);
+      this.setVelocityY(-(560 + Math.abs(this.body.velocity.x) * 0.25));
       AUDIO.sfx('jump');
     }
     if (!jump && this.body.velocity.y < -200) this.setVelocityY(-200);
     this.jumpHeld = jump;
 
-    // 火球
-    if (fire && this.form === FORM_FIRE && time > this.fireCooldown
+    // 火球：按下瞬间发射（按住不连发，与原版一致）
+    if (fire && !this.fireHeld && this.form === FORM_FIRE && time > this.fireCooldown
         && this.scene.fireballs.countActive(true) < 2) {
       this.fireCooldown = time + 350;
       const dir = this.flipX ? -1 : 1;
       new Fireball(this.scene, this.x + dir * 20, this.y - 6, dir);
     }
+    this.fireHeld = fire;
 
-    // 动画
+    // 动画（奔跑时步频加快）
     if (!onFloor) {
       this.anims.stop();
       this.setTexture(prefix + '-jump');
     } else if (left || right) {
       this.play(prefix + '-run', true);
+      this.anims.timeScale = Math.abs(this.body.velocity.x) > 260 ? 1.7 : 1;
     } else {
       this.anims.stop();
       this.setTexture(prefix + '-idle');

@@ -423,8 +423,8 @@ class GameScene extends Phaser.Scene {
     });
   }
 
-  update(time) {
-    this.player.update(time);
+  update(time, delta) {
+    this.player.update(time, delta);
 
     // 天空与太阳跟随镜头（视觉上等同屏幕固定）
     const mid = this.cameras.main.midPoint;

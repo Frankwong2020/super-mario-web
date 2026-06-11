@@ -100,7 +100,7 @@ class MenuScene extends Phaser.Scene {
     }
 
     // 操作说明
-    this.add.text(W / 2, H - 22, '⌨ 方向键/WASD 移动 · 空格/↑ 跳跃 · X/J 火球 · ESC 暂停 · M 静音 · 📱 手机有虚拟按键', {
+    this.add.text(W / 2, H - 22, '⌨ 方向键/WASD 移动 · 空格/↑ 跳跃 · X/J 点按发火球·按住助跑 · ESC 暂停 · M 静音', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '15px', color: '#ffffff',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(5);
