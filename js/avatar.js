@@ -20,19 +20,20 @@ const AVATAR = {
     img.src = data;
   },
 
-  // 居中裁出 10:7 区域（略偏上，人脸通常在上半部），缩成 10x7 像素
+  // 居中裁出 16:11 区域（略偏上，人脸通常在上半部），缩成 16x11 像素
   pixelate(img) {
-    const ratio = 10 / 7;
+    const FW = 16, FH = 11;
+    const ratio = FW / FH;
     let sw, sh;
     if (img.width / img.height > ratio) { sh = img.height; sw = sh * ratio; }
     else { sw = img.width; sh = sw / ratio; }
     const sx = (img.width - sw) / 2;
     const sy = (img.height - sh) * 0.25;
     const c = document.createElement('canvas');
-    c.width = 10; c.height = 7;
+    c.width = FW; c.height = FH;
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 10, 7);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, FW, FH);
     return c;
   },
 
@@ -65,10 +66,10 @@ const AVATAR = {
   save() {
     if (!this.faceCanvas) return;
     const c = document.createElement('canvas');
-    c.width = 40; c.height = 28;
+    c.width = 64; c.height = 44;
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.faceCanvas, 0, 0, 40, 28);
+    ctx.drawImage(this.faceCanvas, 0, 0, 64, 44);
     try { localStorage.setItem(this.KEY, c.toDataURL()); } catch (e) { /* 忽略 */ }
   },
 

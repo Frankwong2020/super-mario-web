@@ -12,7 +12,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'ps-idle');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(2).setDepth(10);
+    this.setScale(1).setDepth(10);   // 高精度立绘为原生像素尺寸
     this.setCollideWorldBounds(false);
 
     this.form = scene.registry.get('form') ?? FORM_SMALL;
@@ -36,9 +36,9 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     const prefix = FORM_PREFIX[this.form];
     this.setTexture(prefix + '-idle');
     if (this.form === FORM_SMALL) {
-      this.body.setSize(11, 15).setOffset(2.5, 1);
+      this.body.setSize(22, 30).setOffset(5, 2);     // 32x32 立绘
     } else {
-      this.body.setSize(11, 22).setOffset(2.5, 2);
+      this.body.setSize(22, 44).setOffset(5, 2);     // 32x48 立绘
     }
   }
 

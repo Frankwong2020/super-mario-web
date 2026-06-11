@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // textures.js - 代码生成全部像素美术（FC 红白机风格，原创绘制）
 // 每个精灵用 ASCII 像素图 + 调色板定义，启动时绘制到 Canvas 纹理
 // ============================================================
@@ -34,6 +34,10 @@ const PAL = {
   'l': '#fca044',       // 岩浆橙
   'C': '#3cbcfc',       // 天空蓝
   'F': '#f87858',       // 火焰橙红
+  'Q': '#fc6848',       // 亮红高光（帽顶）
+  's': '#e09058',       // 皮肤阴影
+  'h': '#4a2c00',       // 深棕（鞋帮/胡子）
+  'b': '#1830b8',       // 深蓝阴影
 };
 
 function colorOf(ch, overrides) {
@@ -62,8 +66,9 @@ function mirror(rows) {
 }
 
 // 玩家纹理：像素图 + 可选自定义人脸覆盖（导入照片功能）
-const FACE_SMALL = { x: 4, y: 2, w: 10, h: 5 };
-const FACE_BIG = { x: 4, y: 3, w: 10, h: 6 };
+// 高精度立绘共用头部，脸部区域 16x11（帽子保留）
+const FACE_SMALL = { x: 8, y: 8, w: 16, h: 11 };
+const FACE_BIG = { x: 8, y: 8, w: 16, h: 11 };
 
 function makePlayerTex(scene, key, rows, overrides, faceRect) {
   const h = rows.length, w = rows[0].length;
@@ -85,147 +90,175 @@ function makePlayerTex(scene, key, rows, overrides, faceRect) {
 }
 
 // ============================================================
-// 主角（小形态 16x16）
+// 主角（高精度立绘：小形态 32x32 / 大形态 32x48，共用 20 行头部）
+// 大头身设计：脸部区域 16x11，导入照片清晰可辨
 // ============================================================
-const PS_IDLE = [
-  '.....RRRRRR.....',
-  '....RRRRRRRRRR..',
-  '....HHHSSSKS....',
-  '...HSHSSSSKSSS..',
-  '...HSHHSSSSKSSS.',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '....RRRBRRR.....',
-  '...RRRRBRRBRRR..',
-  '..RRRRRBBBBRRRR.',
-  '..SSRRBYBBYBRSS.',
-  '..SSSBBBBBBBSSS.',
-  '..SSBBBBBBBBBSS.',
-  '....BBBB..BBB...',
-  '...HHHH...HHHH..',
-  '..HHHHH...HHHHH.',
+const HEAD32 = [
+  '............KKKKKKKK............',
+  '..........KKQQQQQQRRKK..........',
+  '.........KQQQQQQQRRRRRK.........',
+  '........KQQQQQQRRRRRRRRK........',
+  '........KQQQRRRRRRRRRRRK........',
+  '.......KRRRRRRRRRRRRRRRRKKKK....',
+  '.......KRRRRRRRRRRRRRRRRRRRRK...',
+  '........KKKKKKKKKKKKKKKKKKKK....',
+  '........KHHHSSSSSSSSSSSK........',
+  '.......KHHSSSSSSSSSSSSSSK.......',
+  '......KHHSSSSSSSWWKSSSSSK.......',
+  '......KHHSSSSSSSWKKSSSSSK.......',
+  '......KHHSSSSSSSWWKSSSSSSK......',
+  '......KHSSSSSSSSSSSSsSSSSK......',
+  '......KHSSSSSSSSSSSssSSSSK......',
+  '.......KSSSsssSSSSSssSSSK.......',
+  '.......KSShhhhhhhSSSSSSK........',
+  '........KShhhhhhhSSSSsK.........',
+  '.........KSSSSSSSSSssK..........',
+  '..........KKSSSSSSKKK...........',
 ];
-const PS_WALK = [
-  '.....RRRRRR.....',
-  '....RRRRRRRRRR..',
-  '....HHHSSSKS....',
-  '...HSHSSSSKSSS..',
-  '...HSHHSSSSKSSS.',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '....RRRBRRRR....',
-  '...RRRRBRRBRSS..',
-  '..SSRRRBBBBRSS..',
-  '..SSRRBYBBYB....',
-  '...BBBBBBBBB....',
-  '...BBBBBBBBB....',
-  '....BBBBBBB.....',
-  '...HHHHBBB......',
-  '..HHHHH..HHHH...',
+const SB_IDLE = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KRRRRRRRRRRRRRRRK.........',
+  '.....KRRSSKBBRRRRBBKSSRRK.......',
+  '.....KSSSSKBBBBBBBBKSSSSK.......',
+  '.....KSSSSBBYBBBBYBBSSSSK.......',
+  '......KKKBBBBBBBBBBBBKKK........',
+  '........KBBBBBBBBBBBK...........',
+  '........KBBBBKKBBBBBK...........',
+  '........KBBBK..KBBBK............',
+  '.......KhHHHK..KhHHHK...........',
+  '......KhHHHHK..KhHHHHK..........',
+  '.......KKKKK....KKKKK...........',
 ];
-const PS_JUMP = [
-  '.....RRRRRR..SS.',
-  '....RRRRRRRRRSS.',
-  '....HHHSSSKS.SS.',
-  '...HSHSSSSKSSS..',
-  '...HSHHSSSSKSS..',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '..RRRRRBRRRR....',
-  '.SSRRRRBRRBRR...',
-  '.SSRRRRBBBBRR...',
-  '.SS.RRBYBBYB....',
-  '....BBBBBBBB....',
-  '...BBBBBBBBBB...',
-  '..HHBBBB.BBBH...',
-  '..HHHH...HHHH...',
-  '..HHH.....HHH...',
+const SB_WALK = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KRRRRRRRRRRRRRRRK.........',
+  '.....KRRSSKBBRRRRBBKSSRRK.......',
+  '.....KSSSSKBBBBBBBBKSSSSK.......',
+  '.....KSSSSBBYBBBBYBBSSSSK.......',
+  '......KKKBBBBBBBBBBBBKKK........',
+  '.......KBBBBBBBBBBBBK...........',
+  '......KBBBBBKKKBBBBBK...........',
+  '.....KBBBK....KBBBBBBK..........',
+  '....KhHHHK.....KBBBKK...........',
+  '...KhHHHHK....KhHHHHK...........',
+  '....KKKKK......KKKKKK...........',
 ];
-
-// ============================================================
-// 主角（大形态 16x24）
-// ============================================================
-const PB_IDLE = [
-  '.....RRRRRR.....',
-  '....RRRRRRRRR...',
-  '....RRRRRRRRRR..',
-  '....HHHSSSKS....',
-  '...HSHSSSSKSSS..',
-  '...HSHHSSSSKSS..',
-  '...HSHHSSSSKSSS.',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '....RRRRRRRR....',
-  '...RRRRRRRRRR...',
-  '..RRRRRRRRRRRR..',
-  '..RRRBBRRRBBRR..',
-  '..SSRBBRRRBBRSS.',
-  '..SSRBBBBBBBRSS.',
-  '..SSBBYBBBYBBSS.',
-  '...BBBBBBBBBBB..',
-  '...BBBBBBBBBB...',
-  '...BBBB..BBBB...',
-  '...BBB....BBB...',
-  '...BBB....BBB...',
-  '..HHHH....HHHH..',
-  '..HHHHH...HHHHH.',
-  '.HHHHH.....HHHH.',
+const SB_JUMP = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KRRRRRRRRRRRRRRRK.........',
+  '.....KRRSSKBBRRRRBBKSSRRK.......',
+  '.....KSSSSKBBBBBBBBKSSSSK.......',
+  '.....KSSSSBBYBBBBYBBSSSSK.......',
+  '......KKKBBBBBBBBBBBBKKK........',
+  '.......KBBBBBBBBBBBBBK..........',
+  '......KBBBBBKKKKBBBBBBK.........',
+  '.....KBBBBK......KBBBBBK........',
+  '....KhHHHK........KhHHHK........',
+  '...KhHHHHK........KhHHHHK.......',
+  '....KKKKK..........KKKKK........',
 ];
-const PB_WALK = [
-  '.....RRRRRR.....',
-  '....RRRRRRRRR...',
-  '....RRRRRRRRRR..',
-  '....HHHSSSKS....',
-  '...HSHSSSSKSSS..',
-  '...HSHHSSSSKSS..',
-  '...HSHHSSSSKSSS.',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '....RRRRRRRR....',
-  '...RRRRRRRRRSS..',
-  '..RRRRRRRRRRSS..',
-  '..RRRBBRRRBBSS..',
-  '..SSRBBRRRBB....',
-  '..SSRBBBBBBB....',
-  '..SSBBYBBBYB....',
-  '...BBBBBBBBBB...',
-  '...BBBBBBBBBB...',
-  '....BBBBBBBB....',
-  '....BBBBBB......',
-  '...BBB.BBBB.....',
-  '..HHHH..BBBH....',
-  '..HHHHH.HHHHH...',
-  '..HHHH...HHHHH..',
+const BB_IDLE = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KKRRRRRRRRRRRRRRKK........',
+  '.....KRRRRRRRRRRRRRRRRRRK.......',
+  '....KRRRRRBRRRRRRRRBRRRRK.......',
+  '....KRRRRKBBRRRRRRBBKRRRRK......',
+  '...KRRRRRKBBRRRRRRBBKRRRRRK.....',
+  '...KRRRRRKBBBBBBBBBBKRRRRRK.....',
+  '...KRRSSKBYBBBBBBYBBBKSSRRK.....',
+  '...KSSSSKBBYBBBBBBYBBKSSSSK.....',
+  '...KSSSSKBBBBBBBBBBBBKSSSSK.....',
+  '...KSSSSBBBBBBBBBBBBBBSSSSK.....',
+  '....KKKBBBBBBBBBBBBBBBKKK.......',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBBBBBBBBBBK..........',
+  '......KBBBBBBKKBBBBBBK..........',
+  '......KBBBBBK..KBBBBBK..........',
+  '......KBBBBK....KBBBBK..........',
+  '......KBBBBK....KBBBBK..........',
+  '......KBBBBK....KBBBBK..........',
+  '......KBBBBK....KBBBBK..........',
+  '.....KhHHHHK....KhHHHHK.........',
+  '....KhHHHHHK....KhHHHHHK........',
+  '....KhHHHHHK....KhHHHHHK........',
+  '....KhHHHHHHK...KhHHHHHHK.......',
+  '....KhHHHHHHK...KhHHHHHHK.......',
+  '.....KKKKKKK.....KKKKKKK........',
+  '................................',
 ];
-const PB_JUMP = [
-  '.....RRRRRR..SS.',
-  '....RRRRRRRRRSS.',
-  '....RRRRRRRRRSS.',
-  '....HHHSSSKSSS..',
-  '...HSHSSSSKSS...',
-  '...HSHHSSSSKSS..',
-  '...HSHHSSSSKSSS.',
-  '...HHSSSSSKKKK..',
-  '.....SSSSSSSS...',
-  '..RRRRRRRRRR....',
-  '.SSRRRRRRRRRR...',
-  '.SSRRRRRRRRRRR..',
-  '.SSRRBBRRRBBRR..',
-  '....RBBRRRBBR...',
-  '....RBBBBBBBR...',
-  '....BBYBBBYBB...',
-  '...BBBBBBBBBBB..',
-  '...BBBBBBBBBB...',
-  '...BBBB..BBBB...',
-  '..BBBB....BBBB..',
-  '..BBB......BBB..',
-  '.HHHH......HHHH.',
-  '.HHHHH....HHHHH.',
-  '.HHHH......HHHH.',
+const BB_WALK = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KKRRRRRRRRRRRRRRKK........',
+  '.....KRRRRRRRRRRRRRRRRRRK.......',
+  '....KRRRRRBRRRRRRRRBRRRRK.......',
+  '....KRRRRKBBRRRRRRBBKRRRRK......',
+  '...KRRRRRKBBRRRRRRBBKRRRRRK.....',
+  '...KRRRRRKBBBBBBBBBBKRRRRRK.....',
+  '...KRRSSKBYBBBBBBYBBBKSSRRK.....',
+  '...KSSSSKBBYBBBBBBYBBKSSSSK.....',
+  '...KSSSSKBBBBBBBBBBBBKSSSSK.....',
+  '...KSSSSBBBBBBBBBBBBBBSSSSK.....',
+  '....KKKBBBBBBBBBBBBBBBKKK.......',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBBBBBBBBBBK..........',
+  '......KBBBBBKKKKBBBBBK..........',
+  '......KBBBBK....KBBBBBK.........',
+  '.....KBBBBK......KBBBBK.........',
+  '.....KBBBK........KBBBK.........',
+  '....KBBBBK.......KBBBBK.........',
+  '...KhHHHHK.......KhHHHK.........',
+  '..KhHHHHHK......KhHHHHHK........',
+  '..KhHHHHK.......KhHHHHHK........',
+  '..KhHHHHK......KhHHHHHHK........',
+  '..KhHHHHHK.....KhHHHHHHK........',
+  '...KKKKKK.......KKKKKKK.........',
+  '................................',
+  '................................',
 ];
+const BB_JUMP = [
+  '........KKRRKKKKKKRRKK..........',
+  '......KKRRRRRRRRRRRRRRKK........',
+  '.....KRRRRRRRRRRRRRRRRRRK.......',
+  '....KRRRRRBRRRRRRRRBRRRRK.......',
+  '....KRRRRKBBRRRRRRBBKRRRRK......',
+  '...KRRRRRKBBRRRRRRBBKRRRRRK.....',
+  '...KRRRRRKBBBBBBBBBBKRRRRRK.....',
+  '...KRRSSKBYBBBBBBYBBBKSSRRK.....',
+  '...KSSSSKBBYBBBBBBYBBKSSSSK.....',
+  '...KSSSSKBBBBBBBBBBBBKSSSSK.....',
+  '...KSSSSBBBBBBBBBBBBBBSSSSK.....',
+  '....KKKBBBBBBBBBBBBBBBKKK.......',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBBBBBBBBBBBK.........',
+  '......KBBBBBKKKKBBBBBK..........',
+  '......KBBBBK....KBBBBK..........',
+  '.....KBBBBK......KBBBBK.........',
+  '....KBBBBK........KBBBK.........',
+  '...KhHHHHK.......KhHHHK.........',
+  '..KhHHHHHK......KhHHHHHK........',
+  '..KhHHHHK.......KhHHHHHK........',
+  '...KKKKK.........KKKKKK.........',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+];
+const PS_IDLE = [...HEAD32, ...SB_IDLE];
+const PS_WALK = [...HEAD32, ...SB_WALK];
+const PS_JUMP = [...HEAD32, ...SB_JUMP];
+const PB_IDLE = [...HEAD32, ...BB_IDLE];
+const PB_WALK = [...HEAD32, ...BB_WALK];
+const PB_JUMP = [...HEAD32, ...BB_JUMP];
 
 // 火焰形态 = 大形态换色（红→白、蓝→红）
-const FIRE_SWAP = { 'R': '#fcfcfc', 'r': '#d8d8d8', 'B': '#d82800', 'Y': '#fcc000' };
+const FIRE_SWAP = {
+  'R': '#fcfcfc', 'Q': '#ffffff', 'r': '#d8d8d8',
+  'B': '#d82800', 'b': '#a81000', 'Y': '#fcc000',
+};
 
 // ============================================================
 // 板栗仔 Goomba（16x16）

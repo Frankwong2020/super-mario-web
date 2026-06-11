@@ -77,7 +77,7 @@ class MenuScene extends Phaser.Scene {
     pvBg.fillStyle(0xffffff, 0.25); pvBg.fillRoundedRect(-58, -78, 116, 150, 12);
     pvBg.lineStyle(3, 0xffffff, 0.6); pvBg.strokeRoundedRect(-58, -78, 116, 150, 12);
     pv.add(pvBg);
-    this.previewImg = this.add.image(0, -14, 'pb-idle').setScale(4);
+    this.previewImg = this.add.image(0, -14, 'pb-idle').setScale(2.4);
     pv.add(this.previewImg);
     pv.add(this.add.text(0, 52, '当前主角', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '15px', color: '#ffffff',
