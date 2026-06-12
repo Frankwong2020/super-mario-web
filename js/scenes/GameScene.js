@@ -198,8 +198,16 @@ class GameScene extends Phaser.Scene {
     const notPiranha = (enemy) => enemy.kind !== 'piranha';
 
     P.add.collider(this.player, this.solids);
-    P.add.collider(this.player, this.blocks, (player, block) => {
-      if (player.body.touching.up && block.body.touching.down) this.bumpBlock(block);
+    // 顶砖判定放在碰撞分离前（processCallback）：斜着撞到砖角时物理引擎常按水平轴分离，
+    // touching.up 不会置位，按分离后的标志判定会漏掉非正面的撞击
+    this.pendingBumps = [];
+    P.add.collider(this.player, this.blocks, null, (player, block) => {
+      const pb = player.body, bb = block.body;
+      const rising = pb.velocity.y < 0;
+      const fromBelow = pb.prev.y >= bb.bottom - 2;   // 上一帧头部还在砖底之下
+      const overlapX = Math.min(pb.right, bb.right) - Math.max(pb.left, bb.left);
+      if (rising && fromBelow && overlapX > 2) this.pendingBumps.push(block);
+      return true;
     });
     P.add.collider(this.enemies, this.solids, null, notPiranha);
     P.add.collider(this.enemies, this.blocks, null, notPiranha);
@@ -424,6 +432,14 @@ class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    // 本帧顶到的砖块：只顶离头最近的一块（同时撞到两块相邻砖时与原版一致）
+    if (this.pendingBumps.length) {
+      const best = this.pendingBumps.reduce((a, b) =>
+        Math.abs(b.x - this.player.x) < Math.abs(a.x - this.player.x) ? b : a);
+      this.bumpBlock(best);
+      this.pendingBumps = [];
+    }
+
     this.player.update(time, delta);
 
     // 天空与太阳跟随镜头（视觉上等同屏幕固定）
