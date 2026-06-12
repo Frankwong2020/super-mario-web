@@ -148,9 +148,11 @@ class UIScene extends Phaser.Scene {
   }
 
   makeButton(x, y, r, label, key) {
+    // 注意不能设 setScrollFactor(0)：本场景相机 zoom+centerOn 带隐式滚动，
+    // scrollFactor 0 会让圆圈和点击热区整体位移到画面中部，与文字标签错位
     const zone = this.add.circle(x, y, r, 0xffffff, 0.22)
       .setStrokeStyle(3, 0xffffff, 0.5)
-      .setScrollFactor(0).setDepth(50)
+      .setDepth(50)
       .setInteractive();
     const txt = this.add.text(x, y, label, {
       fontFamily: 'sans-serif', fontSize: `${r}px`, color: '#ffffff',
