@@ -175,6 +175,78 @@ function buildW22() {
   return b.toRows();
 }
 
+// ---------- 3-1 险峰栈道 ----------
+function buildW31() {
+  const b = new LevelBuilder(190);
+  b.ground(0, 14); b.ground(19, 38); b.ground(44, 63); b.ground(68, 90);
+  b.ground(95, 118); b.ground(124, 150); b.ground(155, 189);
+  b.set(8, 9, 'M');
+  b.enemy(11, 'g');
+  b.coins(15, 18, 8);                          // 跨坑金币
+  b.row(9, 22, 26, 'B'); b.set(24, 9, '?');
+  b.enemy(25, 'k'); b.enemy(28, 'g'); b.enemy(30, 'g');
+  b.pipe(33, 4, true);
+  b.row(8, 40, 42, '='); b.coins(40, 42, 6);   // 宽坑浮台
+  b.row(7, 48, 52, '='); b.coins(48, 52, 4);   // 高空浮台
+  b.enemy(50, 'g'); b.enemy(53, 'k'); b.enemy(56, 'g');
+  b.pipe(59, 3, true);
+  b.coins(64, 67, 7);
+  b.row(9, 70, 76, 'B'); b.set(72, 9, 'M'); b.set(75, 9, '!');
+  b.enemy(74, 'g'); b.enemy(77, 'g'); b.enemy(80, 'k'); b.enemy(83, 'g');
+  b.stairsUp(86, 4);
+  b.coins(91, 94, 8);
+  b.pipe(97, 2, true); b.pipe(103, 3, true); b.pipe(109, 4, true);   // 管阵
+  b.enemy(101, 'g'); b.enemy(107, 'g'); b.enemy(113, 'k');
+  b.row(8, 120, 122, '='); b.coins(119, 123, 7);   // 宽坑浮台
+  b.stairsUp(126, 4); b.stairsDown(132, 4);
+  b.enemy(130, 'k'); b.enemy(137, 'k'); b.enemy(139, 'g'); b.enemy(141, 'g');
+  b.row(9, 143, 147, 'B'); b.set(145, 9, '?');
+  b.coins(151, 154, 8);
+  b.enemy(158, 'g'); b.enemy(160, 'g'); b.enemy(162, 'k');
+  b.row(8, 164, 168, '='); b.coins(164, 168, 5);
+  b.stairsUp(172, 6);
+  b.flag(180); b.castle(186);
+  return b.toRows();
+}
+
+// ---------- 3-2 熔岩洞窟 ----------
+function buildW32() {
+  const b = new LevelBuilder(170);
+  b.row(0, 0, 169, 'B');                       // 天花板
+  b.ground(0, 16); b.ground(21, 38); b.ground(43, 62); b.ground(68, 88);
+  b.ground(93, 115); b.ground(120, 140); b.ground(145, 169);
+  b.lava(17, 20); b.lava(39, 42); b.lava(63, 67);   // 坑底岩浆
+  b.lava(89, 92); b.lava(116, 119); b.lava(141, 144);
+  b.row(9, 5, 9, 'B'); b.set(7, 9, 'M');
+  b.enemy(11, 'g'); b.enemy(13, 'g');
+  b.coins(17, 20, 8);
+  b.fill(24, 26, 9, 12, 'B'); b.coins(24, 26, 6);
+  b.enemy(29, 'k'); b.enemy(32, 'g');
+  b.pipe(35, 2, true);
+  b.coins(39, 42, 7);
+  b.row(8, 46, 50, 'B'); b.set(48, 8, '?');
+  b.enemy(48, 'g'); b.enemy(51, 'g'); b.enemy(53, 'k');
+  b.pipe(57, 3, true);
+  b.row(8, 63, 66, '='); b.coins(63, 66, 5);   // 岩浆湖上平台
+  b.row(9, 70, 75, 'B'); b.set(72, 9, '!');
+  b.enemy(74, 'k'); b.enemy(77, 'g'); b.enemy(79, 'g');
+  b.fill(82, 84, 8, 12, 'B'); b.coins(82, 84, 5);
+  b.coins(89, 92, 7);
+  b.enemy(96, 'g'); b.enemy(98, 'g'); b.enemy(100, 'k'); b.enemy(102, 'g');
+  b.pipe(105, 4, true);
+  b.row(9, 109, 113, 'B'); b.set(111, 9, 'M');
+  b.coins(116, 119, 7);
+  b.fill(123, 125, 9, 12, 'B');
+  b.enemy(128, 'k'); b.enemy(130, 'k'); b.enemy(133, 'g');
+  b.pipe(136, 2, true);
+  b.coins(141, 144, 8);
+  b.enemy(148, 'g'); b.enemy(150, 'g');
+  b.row(9, 152, 156, 'B'); b.set(154, 9, '?');
+  b.stairsUp(159, 5);
+  b.flag(165); // 地下关无城堡
+  return b.toRows();
+}
+
 // ---------- 城堡 Boss 战 ----------
 function buildCastle() {
   const b = new LevelBuilder(90);
@@ -197,6 +269,8 @@ const LEVELS = [
   { name: '世界 1-2', theme: 'underground', music: 'underground', time: 300, map: buildW12() },
   { name: '世界 2-1', theme: 'overworld',  music: 'overworld',  time: 300, map: buildW21() },
   { name: '世界 2-2', theme: 'underground', music: 'underground', time: 300, map: buildW22() },
+  { name: '世界 3-1', theme: 'overworld',  music: 'overworld',  time: 300, map: buildW31() },
+  { name: '世界 3-2', theme: 'underground', music: 'underground', time: 300, map: buildW32() },
   { name: '魔王城堡', theme: 'castle',     music: 'boss',       time: 300, map: buildCastle() },
 ];
 
