@@ -166,6 +166,8 @@ class Boss extends Phaser.Physics.Arcade.Sprite {
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
     if (this.dead || !this.body) return;
+    // 掉入岩浆坑：视为被击败（经典设定），否则 Boss 掉出世界后永远无法通关
+    if (this.y > (ROWS - 1) * TILE) { this.die(); return; }
     const player = this.scene.player;
     if (!player || player.dying) return;
     const dist = Math.abs(player.x - this.x);
