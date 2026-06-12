@@ -150,10 +150,11 @@ class UIScene extends Phaser.Scene {
   makeButton(x, y, r, label, key) {
     // 注意不能设 setScrollFactor(0)：本场景相机 zoom+centerOn 带隐式滚动，
     // scrollFactor 0 会让圆圈和点击热区整体位移到画面中部，与文字标签错位
+    // 热区比可见圆大一圈（+16px），手指不必精确落在圆内；Arc 本地坐标中心为 (r, r)
     const zone = this.add.circle(x, y, r, 0xffffff, 0.22)
       .setStrokeStyle(3, 0xffffff, 0.5)
       .setDepth(50)
-      .setInteractive();
+      .setInteractive(new Phaser.Geom.Circle(r, r, r + 16), Phaser.Geom.Circle.Contains);
     const txt = this.add.text(x, y, label, {
       fontFamily: 'sans-serif', fontSize: `${r}px`, color: '#ffffff',
     }).setOrigin(0.5).setDepth(51).setAlpha(0.8);
@@ -171,10 +172,11 @@ class UIScene extends Phaser.Scene {
 
   buildTouchControls() {
     const H = VIEW_H;   // 多点触控数量已在 main.js 的 activePointers 配置
-    this.makeButton(80, H - 70, 42, '◀', 'left');
-    this.makeButton(190, H - 70, 42, '▶', 'right');
-    this.makeButton(944, H - 60, 46, 'A', 'jump');
-    this.makeButton(840, H - 110, 38, 'B', 'fire');
+    // 左右键间距需 > 两热区半径之和（46+16=62，和 124 < 130），避免一指压到两键
+    this.makeButton(75, H - 72, 46, '◀', 'left');
+    this.makeButton(205, H - 72, 46, '▶', 'right');
+    this.makeButton(944, H - 64, 48, 'A', 'jump');
+    this.makeButton(830, H - 122, 40, 'B', 'fire');
   }
 
   update() {
