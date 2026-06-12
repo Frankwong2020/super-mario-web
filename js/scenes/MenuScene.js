@@ -84,6 +84,22 @@ class MenuScene extends Phaser.Scene {
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5));
 
+    // 个性化名牌：昵称 + 最高纪录（与左侧主角预览对称）
+    const pn = this.add.container(W / 2 + 330, 320);
+    const pnBg = this.add.graphics();
+    pnBg.fillStyle(0xffffff, 0.25); pnBg.fillRoundedRect(-58, -78, 116, 150, 12);
+    pnBg.lineStyle(3, 0xffffff, 0.6); pnBg.strokeRoundedRect(-58, -78, 116, 150, 12);
+    pn.add(pnBg);
+    const small = (y, txt, size, color) => pn.add(this.add.text(0, y, txt, {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: size, color,
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5));
+    small(-58, '🏆 最高纪录', '14px', '#ffffff');
+    small(-34, String(PROFILE.best).padStart(6, '0'), '20px', '#ffe066');
+    small(-4, PROFILE.name, '19px', '#ffffff');
+    this.makeButton(W / 2 + 330, 42 + 320, 96, 34, '✏️ 改名', 0x9a6020, 0x553410, '15px',
+      () => this.renameHero());
+
     // 开始按钮 + 头像按钮
     this.makeButton(W / 2, 290, 300, 62, '▶  开 始 游 戏', 0x00a800, 0x005800, '26px',
       () => this.go('title'));
@@ -129,6 +145,13 @@ class MenuScene extends Phaser.Scene {
     return zone;
   }
 
+  renameHero() {
+    const n = window.prompt('给主角起个名字（最多 8 个字）', PROFILE.data.name || '');
+    if (n === null) return;
+    PROFILE.setName(n);
+    this.scene.restart({ mode: 'title' });
+  }
+
   importAvatar() {
     AVATAR.importFromFile((ok) => {
       if (!ok) return;
@@ -158,14 +181,33 @@ class MenuScene extends Phaser.Scene {
     g.fillStyle(0x000000, 0.55); g.fillRoundedRect(W / 2 - 300, H / 2 - 130, 600, 250, 20);
     g.lineStyle(4, win ? 0xfcc000 : 0xd82800, 1); g.strokeRoundedRect(W / 2 - 300, H / 2 - 130, 600, 250, 20);
 
-    this.add.text(W / 2, H / 2 - 70, win ? '🎉 恭喜通关！🎉' : 'GAME OVER', {
+    // 个性化语录 + 最高纪录
+    const isNewBest = PROFILE.recordScore(score || 0);
+    const name = PROFILE.name;
+    const quotes = win
+      ? [`${name} 拯救了世界，城堡恢复和平！`, `不愧是 ${name}，连魔王都甘拜下风！`, `${name} 的冒险传说将永远流传！`]
+      : [`${name} 别灰心，英雄都是摔出来的！`, `就差一点点，${name} 再来一次！`, `魔王还在嘚瑟，${name} 快去教训它！`];
+    const quote = quotes[Math.floor(Math.random() * quotes.length)];
+
+    this.add.text(W / 2, H / 2 - 75, win ? '🎉 恭喜通关！🎉' : 'GAME OVER', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '54px', fontStyle: 'bold',
       color: win ? '#fcc000' : '#d82800', stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
-    this.add.text(W / 2, H / 2 + 5, `最终得分：${score || 0}`, {
+    this.add.text(W / 2, H / 2 - 22, quote, {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '20px', color: '#ffe9a0',
+    }).setOrigin(0.5);
+    this.add.text(W / 2, H / 2 + 18, `最终得分：${score || 0}`, {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '30px', color: '#ffffff',
     }).setOrigin(0.5);
-    const hint = this.add.text(W / 2, H / 2 + 75, '点击 或 按任意键 返回标题', {
+    const record = this.add.text(W / 2, H / 2 + 58,
+      isNewBest ? '🏆 新纪录！' : `🏆 最高纪录 ${PROFILE.best}`, {
+        fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '19px',
+        color: isNewBest ? '#ffe066' : '#aaaaaa', fontStyle: isNewBest ? 'bold' : 'normal',
+      }).setOrigin(0.5);
+    if (isNewBest) {
+      this.tweens.add({ targets: record, scale: 1.25, duration: 400, yoyo: true, repeat: -1 });
+    }
+    const hint = this.add.text(W / 2, H / 2 + 95, '点击 或 按任意键 返回标题', {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '20px', color: '#cccccc',
     }).setOrigin(0.5);
     this.tweens.add({ targets: hint, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });

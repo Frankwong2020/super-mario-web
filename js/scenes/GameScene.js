@@ -124,11 +124,14 @@ class GameScene extends Phaser.Scene {
     const t1 = this.add.text(512, 195, level.name, {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '40px', fontStyle: 'bold', color: '#ffffff',
     }).setOrigin(0.5).setDepth(100);
-    const icon = this.add.image(478, 262, 'ps-idle').setScale(1)
-      .setDepth(100);
-    const t2 = this.add.text(500, 262, ` × ${this.registry.get('lives')}`, {
+    const t2 = this.add.text(0, 262, `${PROFILE.name} × ${this.registry.get('lives')}`, {
       fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '26px', color: '#ffffff',
     }).setOrigin(0, 0.5).setDepth(100);
+    // 图标 + 文本整体居中
+    const icon = this.add.image(0, 262, 'ps-idle').setScale(1).setDepth(100);
+    const total = 40 + t2.width;
+    icon.x = 512 - total / 2 + 16;
+    t2.x = icon.x + 24;
     this.time.delayedCall(1500, () => {
       [cover, t1, icon, t2].forEach(o => o.destroy());
       this.physics.resume();
