@@ -84,6 +84,23 @@ class MenuScene extends Phaser.Scene {
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5));
 
+    // 套装颜色选择（红/蓝/绿）
+    const outfitColors = [['red', 0xd82800], ['blue', 0x2068e8], ['green', 0x00a800]];
+    outfitColors.forEach(([key, tint], i) => {
+      const active = PROFILE.color === key;
+      const dot = this.add.circle(W / 2 - 330 + (i - 1) * 38, 404, 13, tint)
+        .setStrokeStyle(3, active ? 0xffffff : 0x000000, active ? 1 : 0.45)
+        .setInteractive({ useHandCursor: true });
+      if (active) dot.setScale(1.2);
+      dot.on('pointerup', () => {
+        if (PROFILE.color === key) return;
+        PROFILE.setColor(key);
+        this.previewImg.destroy();           // 先销毁预览，再重建纹理，避免悬空帧
+        TextureFactory.generatePlayers(this);
+        this.scene.restart({ mode: 'title' });
+      });
+    });
+
     // 个性化名牌：昵称 + 最高纪录（与左侧主角预览对称）
     const pn = this.add.container(W / 2 + 330, 320);
     const pnBg = this.add.graphics();
@@ -99,6 +116,8 @@ class MenuScene extends Phaser.Scene {
     small(-4, PROFILE.name, '19px', '#ffffff');
     this.makeButton(W / 2 + 330, 42 + 320, 96, 34, '✏️ 改名', 0x9a6020, 0x553410, '15px',
       () => this.renameHero());
+    this.makeButton(W / 2 + 330, 404, 122, 32, '🏁 通关纪录', 0x205880, 0x102c40, '14px',
+      () => this.showRecords());
 
     // 开始按钮 + 头像按钮
     this.makeButton(W / 2, 290, 300, 62, '▶  开 始 游 戏', 0x00a800, 0x005800, '26px',
@@ -143,6 +162,36 @@ class MenuScene extends Phaser.Scene {
     zone.on('pointerdown', () => { draw(edge); });
     zone.on('pointerup', () => { draw(color); onClick(); });
     return zone;
+  }
+
+  // ---------- 通关时间排行 ----------
+  showRecords() {
+    if (this.recordsPanel) return;
+    const W = VIEW_W, H = VIEW_H;
+    const c = this.add.container(0, 0).setDepth(300);
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(0x1c2438, 0.96); g.fillRoundedRect(W / 2 - 230, 44, 460, 392, 16);
+    g.lineStyle(3, 0xffffff, 0.25); g.strokeRoundedRect(W / 2 - 230, 44, 460, 392, 16);
+    c.add([dim, g]);
+    c.add(this.add.text(W / 2, 82, '🏁 通关时间排行', {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '26px', fontStyle: 'bold',
+      color: '#ffffff', stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5));
+    const rowStyle = { fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '19px', color: '#ffffff' };
+    LEVELS.forEach((L, i) => {
+      const y = 128 + i * 38;
+      const best = PROFILE.bestTime(i);
+      c.add(this.add.text(W / 2 - 190, y, L.name, rowStyle).setOrigin(0, 0.5));
+      c.add(this.add.text(W / 2 + 190, y, best !== undefined ? `⏱ ${best} 秒` : '——', {
+        ...rowStyle, color: best !== undefined ? '#ffe066' : '#667',
+      }).setOrigin(1, 0.5));
+    });
+    c.add(this.add.text(W / 2, 412, '点击任意处关闭', {
+      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '14px', color: '#8898b8',
+    }).setOrigin(0.5));
+    dim.on('pointerup', () => { c.destroy(); this.recordsPanel = null; });
+    this.recordsPanel = c;
   }
 
   renameHero() {

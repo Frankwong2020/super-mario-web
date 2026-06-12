@@ -260,6 +260,14 @@ const FIRE_SWAP = {
   'B': '#d82800', 'b': '#a81000', 'Y': '#fcc000',
 };
 
+// 套装换色（帽子/上衣 R/Q/r，背带裤 B/b）；火焰形态不受套装影响
+const OUTFITS = {
+  red: null,                                                       // 经典红 + 蓝背带裤
+  blue: { 'R': '#2068e8', 'Q': '#60a0ff', 'r': '#103880',
+          'B': '#d82800', 'b': '#a81000' },                        // 蓝帽衫 + 红背带裤
+  green: { 'R': '#00a800', 'Q': '#48d048', 'r': '#006000' },       // 绿帽衫 + 蓝背带裤
+};
+
 // ============================================================
 // 板栗仔 Goomba（16x16）
 // ============================================================
@@ -1002,17 +1010,19 @@ function makeCastleFlagTex(scene) {
 // 入口：生成全部纹理 + 动画
 // ============================================================
 const TextureFactory = {
-  // 主角纹理单独生成，导入头像后可在线重建
+  // 主角纹理单独生成，导入头像/切换套装颜色后可在线重建
   generatePlayers(scene) {
-    makePlayerTex(scene, 'ps-idle', PS_IDLE, null, FACE_SMALL);
-    makePlayerTex(scene, 'ps-walk', PS_WALK, null, FACE_SMALL);
-    makePlayerTex(scene, 'ps-jump', PS_JUMP, null, FACE_SMALL);
-    makePlayerTex(scene, 'pb-idle', PB_IDLE, null, FACE_BIG);
-    makePlayerTex(scene, 'pb-walk', PB_WALK, null, FACE_BIG);
-    makePlayerTex(scene, 'pb-jump', PB_JUMP, null, FACE_BIG);
-    makePlayerTex(scene, 'pf-idle', PB_IDLE, FIRE_SWAP, FACE_BIG);
-    makePlayerTex(scene, 'pf-walk', PB_WALK, FIRE_SWAP, FACE_BIG);
-    makePlayerTex(scene, 'pf-jump', PB_JUMP, FIRE_SWAP, FACE_BIG);
+    const outfit = OUTFITS[PROFILE.color] || null;
+    const fire = { ...(outfit || {}), ...FIRE_SWAP };   // 火焰形态配色固定
+    makePlayerTex(scene, 'ps-idle', PS_IDLE, outfit, FACE_SMALL);
+    makePlayerTex(scene, 'ps-walk', PS_WALK, outfit, FACE_SMALL);
+    makePlayerTex(scene, 'ps-jump', PS_JUMP, outfit, FACE_SMALL);
+    makePlayerTex(scene, 'pb-idle', PB_IDLE, outfit, FACE_BIG);
+    makePlayerTex(scene, 'pb-walk', PB_WALK, outfit, FACE_BIG);
+    makePlayerTex(scene, 'pb-jump', PB_JUMP, outfit, FACE_BIG);
+    makePlayerTex(scene, 'pf-idle', PB_IDLE, fire, FACE_BIG);
+    makePlayerTex(scene, 'pf-walk', PB_WALK, fire, FACE_BIG);
+    makePlayerTex(scene, 'pf-jump', PB_JUMP, fire, FACE_BIG);
   },
 
   generateAll(scene) {

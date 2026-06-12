@@ -232,6 +232,7 @@ class GameScene extends Phaser.Scene {
     this.events.once('bossDefeated', () => {
       this.levelClearing = true;
       this.timerEvent.paused = true;
+      this.recordLevelTime();
       this.time.delayedCall(3000, () => {
         this.scene.stop('UIScene');
         this.scene.start('MenuScene', { mode: 'win', score: this.registry.get('score') });
@@ -367,11 +368,24 @@ class GameScene extends Phaser.Scene {
     this.registry.set('coins', coins);
   }
 
+  // 通关用时结算：记录本关最快纪录并弹提示
+  recordLevelTime() {
+    const elapsed = LEVELS[this.levelIndex].time - Math.max(0, this.timeLeft);
+    const newBest = PROFILE.recordTime(this.levelIndex, elapsed);
+    const t = this.add.text(this.player.x, this.player.y - 110,
+      `⏱ 用时 ${elapsed} 秒${newBest ? '，新纪录！' : ''}`, {
+        fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '22px', fontStyle: 'bold',
+        color: newBest ? '#ffe066' : '#ffffff', stroke: '#000000', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(60);
+    this.tweens.add({ targets: t, y: t.y - 30, duration: 1800 });
+  }
+
   // ---------- 过关（碰旗杆） ----------
   hitFlag() {
     if (this.levelClearing || this.player.dying) return;
     this.levelClearing = true;
     this.timerEvent.paused = true;
+    this.recordLevelTime();
     AUDIO.stopMusic();
     AUDIO.sfx('flag');
 

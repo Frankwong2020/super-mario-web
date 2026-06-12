@@ -7,7 +7,7 @@
 
 const PROFILE = {
   KEY: 'mario-profile-v1',
-  data: { name: '', best: 0 },
+  data: { name: '', best: 0, color: 'red', times: {} },
 
   load() {
     try {
@@ -33,8 +33,26 @@ const PROFILE = {
     return true;
   },
 
+  setColor(c) {
+    this.data = { ...this.data, color: c };
+    this.save();
+  },
+
+  // 记录某关最快通关用时（秒），返回是否破纪录
+  recordTime(level, sec) {
+    const times = { ...(this.data.times || {}) };
+    if (times[level] !== undefined && times[level] <= sec) return false;
+    times[level] = sec;
+    this.data = { ...this.data, times };
+    this.save();
+    return true;
+  },
+
+  bestTime(level) { return (this.data.times || {})[level]; },
+
   get name() { return this.data.name || '小英雄'; },
   get best() { return this.data.best || 0; },
+  get color() { return this.data.color || 'red'; },
 };
 
 PROFILE.load();
