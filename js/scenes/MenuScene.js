@@ -116,7 +116,7 @@ class MenuScene extends Phaser.Scene {
     small(-4, PROFILE.name, '19px', '#ffffff');
     this.makeButton(W / 2 + 330, 42 + 320, 96, 34, '✏️ 改名', 0x9a6020, 0x553410, '15px',
       () => this.renameHero());
-    this.makeButton(W / 2 + 330, 404, 122, 32, '🏁 通关纪录', 0x205880, 0x102c40, '14px',
+    this.makeButton(W / 2 + 330, 404, 122, 32, '🏁 排行榜', 0x205880, 0x102c40, '14px',
       () => this.showRecords());
 
     // 开始按钮 + 头像按钮
@@ -142,7 +142,7 @@ class MenuScene extends Phaser.Scene {
   }
 
   // ---------- 圆角按钮 ----------
-  makeButton(x, y, w, h, label, color, edge, fontSize, onClick) {
+  makeButton(x, y, w, h, label, color, edge, fontSize, onClick, container) {
     const g = this.add.graphics();
     const draw = (fill) => {
       g.clear();
@@ -161,35 +161,73 @@ class MenuScene extends Phaser.Scene {
     zone.on('pointerout', () => draw(color));
     zone.on('pointerdown', () => { draw(edge); });
     zone.on('pointerup', () => { draw(color); onClick(); });
+    if (container) container.add([g, txt, zone]);
     return zone;
   }
 
-  // ---------- 通关时间排行 ----------
+  // ---------- 排行榜：世界总分 + 本机各关最快 ----------
   showRecords() {
     if (this.recordsPanel) return;
     const W = VIEW_W, H = VIEW_H;
     const c = this.add.container(0, 0).setDepth(300);
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setInteractive();
     const g = this.add.graphics();
-    g.fillStyle(0x1c2438, 0.96); g.fillRoundedRect(W / 2 - 230, 44, 460, 392, 16);
-    g.lineStyle(3, 0xffffff, 0.25); g.strokeRoundedRect(W / 2 - 230, 44, 460, 392, 16);
+    g.fillStyle(0x1c2438, 0.96); g.fillRoundedRect(W / 2 - 300, 40, 600, 400, 16);
+    g.lineStyle(3, 0xffffff, 0.25); g.strokeRoundedRect(W / 2 - 300, 40, 600, 400, 16);
     c.add([dim, g]);
-    c.add(this.add.text(W / 2, 82, '🏁 通关时间排行', {
-      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '26px', fontStyle: 'bold',
-      color: '#ffffff', stroke: '#000000', strokeThickness: 4,
-    }).setOrigin(0.5));
-    const rowStyle = { fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '19px', color: '#ffffff' };
+    const txt = (x, y, s, size, color, originX) => {
+      const o = this.add.text(x, y, s, {
+        fontFamily: '"Microsoft YaHei", sans-serif', fontSize: size,
+        color: color || '#ffffff', stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(originX ?? 0.5, 0.5);
+      c.add(o);
+      return o;
+    };
+    txt(W / 2, 74, '🏁 排 行 榜', '26px');
+
+    // 左栏：世界总分 Top 8
+    txt(W / 2 - 160, 112, '🌍 世界总分', '19px', '#7fd0ff');
+    const cloudOn = typeof CLOUD !== 'undefined' && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG;
+    if (!cloudOn) {
+      txt(W / 2 - 160, 240, '云端排行尚未开通', '16px', '#8898b8');
+    } else {
+      const loading = txt(W / 2 - 160, 240, '加载中…', '16px', '#8898b8');
+      CLOUD.ready && CLOUD.ready.then(() => CLOUD.fetchTop(8)).then((rows) => {
+        if (!this.recordsPanel || this.recordsPanel !== c) return;   // 面板已关闭
+        loading.destroy();
+        if (!rows || !rows.length) { txt(W / 2 - 160, 240, rows ? '虚位以待，快来抢榜！' : '加载失败', '16px', '#8898b8'); return; }
+        rows.forEach((r, i) => {
+          const y = 142 + i * 30;
+          const mine = CLOUD.user && r.uid === CLOUD.user.uid;
+          const color = mine ? '#ffe066' : '#ffffff';
+          txt(W / 2 - 286, y, `${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'}`, '16px', color, 0);
+          txt(W / 2 - 240, y, r.name + (mine ? '（我）' : ''), '16px', color, 0);
+          txt(W / 2 - 36, y, String(r.best), '16px', color, 1);
+        });
+      });
+    }
+
+    // 右栏：本机各关最快
+    txt(W / 2 + 160, 112, '📍 本机最快', '19px', '#9fe88f');
     LEVELS.forEach((L, i) => {
-      const y = 128 + i * 38;
+      const y = 142 + i * 30;
       const best = PROFILE.bestTime(i);
-      c.add(this.add.text(W / 2 - 190, y, L.name, rowStyle).setOrigin(0, 0.5));
-      c.add(this.add.text(W / 2 + 190, y, best !== undefined ? `⏱ ${best} 秒` : '——', {
-        ...rowStyle, color: best !== undefined ? '#ffe066' : '#667',
-      }).setOrigin(1, 0.5));
+      txt(W / 2 + 36, y, L.name, '16px', '#ffffff', 0);
+      txt(W / 2 + 286, y, best !== undefined ? `${best} 秒` : '——', '16px',
+        best !== undefined ? '#ffe066' : '#667788', 1);
     });
-    c.add(this.add.text(W / 2, 412, '点击任意处关闭', {
-      fontFamily: '"Microsoft YaHei", sans-serif', fontSize: '14px', color: '#8898b8',
-    }).setOrigin(0.5));
+
+    // Google 绑定（进度跨设备永续）
+    const gLabel = !cloudOn ? '☁ 云端排行尚未开通'
+      : (CLOUD.isGoogle() ? `✓ 已绑定 Google，进度跨设备保存` : '🔗 绑定 Google 账号，进度永不丢失');
+    this.makeButton(W / 2, 396, 330, 36, gLabel,
+      cloudOn && !CLOUD.isGoogle() ? 0x2068e8 : 0x505860, 0x103880, '15px', () => {
+        if (!cloudOn || CLOUD.isGoogle()) return;
+        CLOUD.signInGoogle((ok) => {
+          if (this.recordsPanel === c) { c.destroy(); this.recordsPanel = null; this.showRecords(); }
+        });
+      }, c);
+    txt(W / 2, 426, '点击空白处关闭', '13px', '#8898b8');
     dim.on('pointerup', () => { c.destroy(); this.recordsPanel = null; });
     this.recordsPanel = c;
   }

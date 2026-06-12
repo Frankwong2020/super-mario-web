@@ -18,6 +18,8 @@ const PROFILE = {
 
   save() {
     try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch (e) { /* 忽略 */ }
+    // 云端档案同步（cloud.js 未配置/未加载时静默跳过）
+    if (typeof CLOUD !== 'undefined' && CLOUD.enabled) CLOUD.scheduleSync();
   },
 
   setName(n) {
